@@ -1235,7 +1235,7 @@ function initVoiceRecognition() {
         voiceRecognition = new SpeechRecognition();
         voiceRecognition.continuous = true;
         voiceRecognition.interimResults = true;
-        voiceRecognition.lang = 'en-US';
+        voiceRecognition.lang = 'id';
         
         voiceRecognition.onresult = function(event) {
             const last = event.results.length - 1;
