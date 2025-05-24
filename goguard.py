@@ -17,7 +17,7 @@ from typing import Tuple
 import base64
 import hashlib
 import time
-
+import requests
 
 # Import Qwen AI integration
 try:
