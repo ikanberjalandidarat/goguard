@@ -743,6 +743,9 @@ def end_ride(ride_id):
 def safety_report(ride_id):
     """Display post-ride safety report"""
     
+    print("===== DEBUGGING =========")
+    print(ride_reports)
+
     mock_report = {
         "ride_id": ride_id,
         "overall_safety_score": 0.92,
@@ -794,6 +797,10 @@ def simulate_current_location(ride, progress):
 
 def generate_safety_report(ride):
     """Generate post-ride safety report"""
+
+    print("===== DEBUGGING =========")
+    print(ai_assistant)
+    
     if ai_assistant:
         ride_data = {
             "duration": f"{(datetime.now() - ride.start_time).seconds // 60} minutes",
@@ -801,8 +808,15 @@ def generate_safety_report(ride):
             "events": ride.safety_events,
             "driver_behavior": "Normal"
         }
-        return ai_assistant.summarize_ride_safety(ride_data)
+        test_output = ai_assistant.summarize_ride_safety(ride_data)
+        
+        print("===== DEBUGGING - AI ASSISTANT =========")
+        print(test_output)
+        
+        return test_output
     
+    print("===== DEBUGGING - NO AI ASSISTANT =========")
+
     incident_count = len([e for e in ride.safety_events if e['type'] != 'VOICE_CHECK'])
     safety_score = max(0.5, 1.0 - (incident_count * 0.1))
     
