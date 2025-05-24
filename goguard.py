@@ -117,6 +117,7 @@ MOCK_LOCATIONS = {
 
 # In-memory storage for active rides
 active_rides = {}
+ride_reports = {}
 
 def load_drivers_from_csv(file_path: str = 'drivers.csv') -> List[Driver]:
     """Load drivers from CSV file and return list of Driver objects"""
@@ -590,7 +591,7 @@ def start_ride():
     data = request.json
     ride_id = f"RIDE_{int(time.time())}"
     
-    driver = MOCK_DRIVERS[0]  # Use Yadi Riyadi for demo
+    driver = MOCK_DRIVERS[random.randrange(0, len(MOCK_DRIVERS))]  # Use Yadi Riyadi for demo
     ride = Ride(
         id=ride_id,
         driver=driver,
@@ -598,7 +599,7 @@ def start_ride():
         dropoff_location=MOCK_LOCATIONS[data['dropoff']]['name'],
         pickup_coords=MOCK_LOCATIONS[data['pickup']]['coords'],
         dropoff_coords=MOCK_LOCATIONS[data['dropoff']]['coords'],
-        estimated_duration=random.randint(1, 3), # For testing purposes
+        estimated_duration=random.randint(1, 1), # For testing purposes
         route_type=data.get('route_type', 'standard'),
         status='ACTIVE',
         start_time=datetime.now(),
@@ -721,25 +722,24 @@ def end_ride(ride_id):
     ride.status = "COMPLETED"
     
     # Generate safety report
-    report = generate_safety_report(ride)
+    ride_reports[ride_id] = generate_safety_report(ride)
     
     del active_rides[ride_id]
     session.pop('current_ride', None)
     
     return jsonify({
         "status": "COMPLETED",
-        "safety_report": report
+        "safety_report": ride_reports[ride_id]
     })
 
 @app.route('/safety-report/<ride_id>')
 def safety_report(ride_id):
     """Display post-ride safety report"""
     
-    
     mock_report = {
         "ride_id": ride_id,
         "overall_safety_score": 0.92,
-        "duration": f"X minutes",
+        "duration": f"{ride_reports[ride_id]['duration']}",
         "route_compliance": "98%",
         "driver_behavior": "Excellent",
         "incidents": 0,
@@ -1815,19 +1815,19 @@ setInterval(() => {
 {% endblock %}'''
     
     # Save all templates
-    with open('templates/base.html', 'w') as f:
+    with open('templates/base.html', 'w', encoding='utf-8') as f:
         f.write(base_html)
     
-    with open('templates/index.html', 'w') as f:
+    with open('templates/index.html', 'w', encoding='utf-8') as f:
         f.write(index_html)
     
-    with open('templates/book_ride.html', 'w') as f:
+    with open('templates/book_ride.html', 'w', encoding='utf-8') as f:
         f.write(book_ride_html)
     
-    with open('templates/ride_monitor.html', 'w') as f:
+    with open('templates/ride_monitor.html', 'w', encoding='utf-8') as f:
         f.write(ride_monitor_html)
     
-    with open('templates/safety_report.html', 'w') as f:
+    with open('templates/safety_report.html', 'w', encoding='utf-8') as f:
         f.write(safety_report_html)
     
     print("🚀 GoGuard Enhanced Mockup Ready!")

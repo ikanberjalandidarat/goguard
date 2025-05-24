@@ -180,9 +180,12 @@ class QwenSafetyAI:
             
             response = completion.choices[0].message.content
             try:
-                return json.loads(response)
+                summary = json.loads(response)
+                summary["duration"] = ride_data.get('duration', 'Unknown')
+                return summary
             except:
                 return {
+                    "duration": ride_data.get('duration', 'Unknown'),
                     "safety_score": 92,
                     "highlights": ["Smooth ride", "No route deviations", "Professional driver"],
                     "recommendations": ["Continue using Safe Route mode for late-night rides"],
