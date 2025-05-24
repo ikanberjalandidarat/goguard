@@ -8,7 +8,7 @@ from openai import OpenAI
 from typing import Dict, List, Optional
 import json
 from datetime import datetime
-
+import re
 class QwenSafetyAI:
     def __init__(self, api_key: str = None):
         """Initialize Qwen AI client"""
@@ -17,7 +17,7 @@ class QwenSafetyAI:
             base_url="https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
         )
         
-        # TODO: Make it rotate API keys when run out 
+        # TODO: Make it rotate API keys when run out optional
         
     def analyze_ride_safety(self, ride_data: Dict) -> Dict:
         """Analyze ride safety using Qwen AI"""
@@ -149,6 +149,7 @@ class QwenSafetyAI:
             import random
             return random.choice(messages)
     
+    
     def summarize_ride_safety(self, ride_data: Dict) -> Dict:
         """Generate post-ride safety summary"""
         try:
@@ -158,7 +159,8 @@ class QwenSafetyAI:
             Duration: {ride_data.get('duration', 'Unknown')}
             Route: {ride_data.get('route_type', 'standard')}
             Safety events: {ride_data.get('events', [])}
-            Driver behavior: {ride_data.get('driver_behavior', 'Normal')}
+            Driver behavior: {ride_data.get('driver_behavior', 'Normal')},
+            
             
             Provide:
             1. Overall safety score (0-100)
@@ -166,7 +168,10 @@ class QwenSafetyAI:
             3. Recommendations for future rides
             4. Areas of concern (if any)
             
-            Format as JSON.
+            Format as a paragraph with bullet points, do not bold any text with **. 
+            Mention the safety score in this format: Overall Safety Score X%.
+            
+            
             """
             
             completion = self.client.chat.completions.create(
@@ -178,18 +183,36 @@ class QwenSafetyAI:
                 temperature=0.6
             )
             
-            response = completion.choices[0].message.content
+            response = completion.choices[0].message.content        
+            
             try:
                 summary = json.loads(response)
                 summary["duration"] = ride_data.get('duration', 'Unknown')
                 return summary
-            except:
+            except Exception as e:
+                print(f"Exception: {e}")
+                
+                match = re.search(r'Overall Safety Score\s+(\d+)%', response, re.IGNORECASE)
+                if match:
+                    safety_score = int(match.group(1))
+                    print(f"Extracted safety score: {safety_score}")
+                    safety_score = safety_score / 100 
+                else:
+                    print("Safety % not detected from regex.")
+                    safety_score = 0.92
+                    
                 return {
                     "duration": ride_data.get('duration', 'Unknown'),
-                    "safety_score": 92,
+                    "safety_score": safety_score * 100,
                     "highlights": ["Smooth ride", "No route deviations", "Professional driver"],
                     "recommendations": ["Continue using Safe Route mode for late-night rides"],
-                    "concerns": []
+                    "concerns": [],
+                    "route_compliance": "98%",
+                    "driver_behavior": "Excellent",
+                    "ai_interventions": 1,
+                    "incidents": 0,
+                    "overall_safety_score": safety_score,
+                    'qwen_response': response
                 }
                 
         except Exception as e:

@@ -38,6 +38,8 @@
                 <h4 style="font-size: 24px; color: #333;">{{ report.ai_interventions }}</h4>
                 <p style="color: #666; font-size: 14px;">AI Check-ins</p>
             </div>
+            
+
         </div>
     </div>
 
@@ -49,6 +51,16 @@
         </div>
         {% endfor %}
     </div>
+    
+    <div class="card">
+        <h4 style="margin-bottom: 16px;">🎯 AI Summarization</h4>
+        <div style="padding: 12px; background: #E3F2FD; border-radius: 8px; margin-bottom: 8px;">
+            <p style="color: #1976D2;">• {{ report.qwen_response }}</p>
+        </div>
+    </div>
+    
+    
+
 
     <div class="card" style="background: #F5F5F5;">
         <h4 style="margin-bottom: 12px;">🔐 Data Security</h4>

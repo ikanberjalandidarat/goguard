@@ -423,10 +423,17 @@ def calculate_ride_risk_score(driver: Driver, pickup: str, dropoff: str, time_of
         }
     }
 
+total_text = []
+
 def analyze_voice_sentiment(text: str, context: Dict = None) -> Dict:
+    global total_text
+    
     """Analyze voice sentiment using Qwen AI or fallback"""
     if ai_assistant:
         return ai_assistant.analyze_voice_distress(text, context or {})
+    
+    # Append
+    total_text.append(text)
     
     # Fallback analysis
     distress_keywords = ["help", "stop", "wrong", "scared", "please", "no", "hurt"]
@@ -747,10 +754,16 @@ def safety_report(ride_id):
         "recommendations": [
             "Consider using Safe Route mode for late-night rides",
             "Your trusted contacts were successfully notified"
-        ]
+        ],
+        'transcript': " ".join(total_text),
+        'qwen_response': ride_reports[ride_id]['qwen_response'],
     }
     
-    return render_template('safety_report.html', report=mock_report)
+    
+    print("======== DEBUGGING =======")
+    print(ride_reports[ride_id]['qwen_response'])
+    
+    return render_template('safety_report.html', report=ride_reports[ride_id])
 
 # Helper Functions
 def monitor_ride(ride_id):
@@ -1824,6 +1837,8 @@ setInterval(() => {
                 <h4 style="font-size: 24px; color: #333;">{{ report.ai_interventions }}</h4>
                 <p style="color: #666; font-size: 14px;">AI Check-ins</p>
             </div>
+            
+
         </div>
     </div>
 
@@ -1835,6 +1850,16 @@ setInterval(() => {
         </div>
         {% endfor %}
     </div>
+    
+    <div class="card">
+        <h4 style="margin-bottom: 16px;">🎯 AI Summarization</h4>
+        <div style="padding: 12px; background: #E3F2FD; border-radius: 8px; margin-bottom: 8px;">
+            <p style="color: #1976D2;">• {{ report.qwen_response }}</p>
+        </div>
+    </div>
+    
+    
+
 
     <div class="card" style="background: #F5F5F5;">
         <h4 style="margin-bottom: 12px;">🔐 Data Security</h4>
