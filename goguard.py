@@ -342,6 +342,7 @@ def book_ride():
 
 @app.route('/api/calculate-risk', methods=['POST'])
 def calculate_risk():
+    
     """API endpoint for risk calculation"""
     data = request.json
     driver = random.choice(MOCK_DRIVERS)
@@ -352,6 +353,8 @@ def calculate_risk():
         data['dropoff'],
         datetime.now().hour
     )
+    
+    time.sleep(3)
     
     return jsonify({
         "driver": {
