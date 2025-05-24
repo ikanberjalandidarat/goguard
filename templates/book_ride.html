@@ -1,61 +1,61 @@
 {% extends "base.html" %}
 {% block title %}Book Safe Ride{% endblock %}
 {% block content %}
-<div class="card">
-    <h2>Book Your Safe Ride</h2>
-    
-    <div class="grid">
-        <div>
-            <label style="display: block; margin-bottom: 8px; font-weight: bold;">Pickup Location</label>
-            <select id="pickup" class="voice-input" style="width: 100%;">
+<div class="container">
+    <div class="card">
+        <h3 style="margin-bottom: 20px;">Where are you going?</h3>
+        
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; color: #666; font-size: 14px;">
+                <span style="color: #00AA13;">●</span> Pickup location
+            </label>
+            <select id="pickup">
                 {% for key, loc in locations.items() %}
                 <option value="{{ key }}">{{ loc.name }}</option>
                 {% endfor %}
             </select>
         </div>
         
-        <div>
-            <label style="display: block; margin-bottom: 8px; font-weight: bold;">Dropoff Location</label>
-            <select id="dropoff" class="voice-input" style="width: 100%;">
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; color: #666; font-size: 14px;">
+                <span style="color: #ff4444;">●</span> Drop-off location
+            </label>
+            <select id="dropoff">
                 {% for key, loc in locations.items() %}
-                <option value="{{ key }}">{{ loc.name }}</option>
+                <option value="{{ key }}" {% if key == 'office' %}selected{% endif %}>{{ loc.name }}</option>
                 {% endfor %}
             </select>
         </div>
-    </div>
-    
-    <div style="margin-top: 20px;">
-        <button onclick="calculateRisk()" class="btn">Calculate Safety Score</button>
-    </div>
-</div>
-
-<div id="riskAnalysis" style="display: none;">
-    <div class="card">
-        <h3>AI Safety Analysis</h3>
-        <div id="riskContent"></div>
+        
+        <button onclick="calculateRisk()" class="btn">
+            Check Safety & Continue
+        </button>
     </div>
 </div>
 
-<div id="rideOptions" style="display: none;">
-    <div class="card">
-        <h3>Choose Your Ride Mode</h3>
-        <div class="grid">
-            <div class="card" style="border: 2px solid #00AA13; cursor: pointer;" onclick="startRide('standard')">
-                <h4>Standard Route</h4>
-                <p>Fastest route to destination</p>
-                <p style="color: #666; margin-top: 8px;">ETA: <span id="etaStandard">15 mins</span></p>
-            </div>
-            <div class="card" style="border: 2px solid #2196F3; cursor: pointer;" onclick="startRide('safe')">
-                <h4>🛡️ Safe Route Mode</h4>
-                <p>Well-lit streets with higher surveillance</p>
-                <p style="color: #666; margin-top: 8px;">ETA: <span id="etaSafe">18 mins</span></p>
-                <p style="color: #2196F3; font-weight: bold;">+3 mins for extra safety</p>
-            </div>
-        </div>
+<!-- Safety Modal -->
+<div id="safetyModal" class="safety-modal" style="display: none;">
+    <div class="modal-content">
+        <div class="shield-icon">🛡️</div>
+        <h2>Turn On "Safe Route Mode"?</h2>
+        <p style="color: #666; margin: 16px 0; line-height: 1.5;">
+            Our AI will continuously monitor your journey and promptly send assistance upon detecting any sounds indicating distress.
+        </p>
+        
+        <div id="riskInfo" style="margin: 20px 0;"></div>
+        
+        <button onclick="startRide('safe')" class="btn" style="margin-bottom: 12px;">
+            Turn On
+        </button>
+        <button onclick="startRide('standard')" class="btn btn-outline">
+            Maybe later
+        </button>
     </div>
 </div>
 
 <script>
+let currentRiskData = null;
+
 function calculateRisk() {
     const pickup = document.getElementById('pickup').value;
     const dropoff = document.getElementById('dropoff').value;
@@ -67,47 +67,35 @@ function calculateRisk() {
     })
     .then(res => res.json())
     .then(data => {
-        displayRiskAnalysis(data);
+        currentRiskData = data;
+        showSafetyModal(data);
     });
 }
 
-function displayRiskAnalysis(data) {
-    const riskClass = data.risk_analysis.level.toLowerCase();
-    const riskHtml = `
-        <div style="text-align: center; margin-bottom: 20px;">
-            <h2>Safety Score: ${data.risk_analysis.score}</h2>
-            <span class="risk-score risk-${riskClass}">${data.risk_analysis.level} RISK</span>
+function showSafetyModal(data) {
+    const riskLevel = data.risk_analysis.risk_level || data.risk_analysis.level;
+    const riskScore = data.risk_analysis.safety_score || data.risk_analysis.score;
+    
+    let riskHtml = `
+        <div style="text-align: center;">
+            <p style="font-size: 14px; color: #666;">AI Safety Score</p>
+            <h3 style="font-size: 32px; margin: 8px 0;">${Math.round(riskScore * 100)}%</h3>
+            <span class="risk-score risk-${riskLevel.toLowerCase()}">${riskLevel} RISK</span>
         </div>
-        
-        <div class="grid">
-            <div>
-                <h4>Driver Profile</h4>
-                <p><strong>${data.driver.name}</strong></p>
-                <p>Rating: ⭐ ${data.driver.rating}</p>
-                <p>Completed Rides: ${data.driver.rides}</p>
-                <p>Vehicle: ${data.driver.vehicle}</p>
-            </div>
-            
-            <div>
-                <h4>Safety Factors</h4>
-                <p>Driver Score: ${data.risk_analysis.factors.driver}</p>
-                <p>Location Safety: ${data.risk_analysis.factors.location}</p>
-                <p>Time Factor: ${data.risk_analysis.factors.time}</p>
-                <p>Experience: ${data.risk_analysis.factors.experience}</p>
-            </div>
-        </div>
-        
-        ${data.risk_analysis.level !== 'LOW' ? `
-        <div class="emergency-panel">
-            <strong>⚠️ GoGuard Recommendation:</strong> Consider using Safe Route Mode for this ride.
-            Additional safety features will be activated.
-        </div>
-        ` : ''}
     `;
     
-    document.getElementById('riskContent').innerHTML = riskHtml;
-    document.getElementById('riskAnalysis').style.display = 'block';
-    document.getElementById('rideOptions').style.display = 'block';
+    if (riskLevel !== 'LOW') {
+        riskHtml += `
+            <div style="margin-top: 16px; padding: 12px; background: #FFF3E0; border-radius: 8px;">
+                <p style="color: #F57C00; font-size: 14px;">
+                    ⚠️ Late night ride detected. Safe Route adds 2-3 minutes but uses well-lit streets.
+                </p>
+            </div>
+        `;
+    }
+    
+    document.getElementById('riskInfo').innerHTML = riskHtml;
+    document.getElementById('safetyModal').style.display = 'flex';
 }
 
 function startRide(routeType) {
@@ -126,5 +114,12 @@ function startRide(routeType) {
         }
     });
 }
+
+// Close modal on outside click
+document.getElementById('safetyModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        this.style.display = 'none';
+    }
+});
 </script>
 {% endblock %}

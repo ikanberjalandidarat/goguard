@@ -1,42 +1,54 @@
 {% extends "base.html" %}
 {% block title %}Home{% endblock %}
 {% block content %}
-<div class="card">
-    <h2>Welcome to GoGuard 🛡️</h2>
-    <p style="font-size: 18px; margin: 20px 0; line-height: 1.6;">
-        Your AI-powered safety companion for Gojek rides. GoGuard uses advanced AI to monitor your rides in real-time, 
-        ensuring you get home safely every time.
-    </p>
+<div class="container">
+    <div class="card" style="background: linear-gradient(135deg, #00AA13, #00DD17); color: white;">
+        <h2 style="font-size: 28px; margin-bottom: 12px;">Welcome to GoGuard 🛡️</h2>
+        <p style="font-size: 16px; opacity: 0.95; line-height: 1.6;">
+            Your AI-powered safety companion for every Gojek ride
+        </p>
+    </div>
     
-    <div class="grid" style="margin: 30px 0;">
-        <div class="card" style="background: #E8F5E9;">
-            <h3>🤖 AI-Powered Monitoring</h3>
-            <p>Real-time voice and behavior analysis to detect potential safety concerns</p>
+    <div class="card">
+        <h3 style="margin-bottom: 20px;">How GoGuard Protects You</h3>
+        
+        <div class="location-item">
+            <div class="location-icon">🤖</div>
+            <div>
+                <strong>AI Voice Guardian</strong>
+                <p style="color: #666; font-size: 14px;">Real-time monitoring detects distress</p>
+            </div>
         </div>
-        <div class="card" style="background: #E3F2FD;">
-            <h3>🗺️ Smart Route Planning</h3>
-            <p>Choose safer routes with better lighting and surveillance</p>
+        
+        <div class="location-item">
+            <div class="location-icon">🗺️</div>
+            <div>
+                <strong>Safe Route Mode</strong>
+                <p style="color: #666; font-size: 14px;">Well-lit paths with surveillance</p>
+            </div>
         </div>
-        <div class="card" style="background: #FFF3E0;">
-            <h3>🚨 Instant Emergency Response</h3>
-            <p>One-touch emergency alerts and automatic location sharing</p>
+        
+        <div class="location-item">
+            <div class="location-icon">🚨</div>
+            <div>
+                <strong>One-Touch Emergency</strong>
+                <p style="color: #666; font-size: 14px;">Instant help when you need it</p>
+            </div>
+        </div>
+        
+        <div class="location-item">
+            <div class="location-icon">📊</div>
+            <div>
+                <strong>Safety Analytics</strong>
+                <p style="color: #666; font-size: 14px;">AI-powered risk assessment</p>
+            </div>
         </div>
     </div>
     
-    <div style="text-align: center; margin-top: 40px;">
-        <a href="/book-ride" class="btn" style="font-size: 20px; padding: 16px 32px;">
-            Start Safe Ride Demo →
+    <div style="padding: 0 20px;">
+        <a href="/book-ride" class="btn">
+            Start Safe Ride Demo
         </a>
     </div>
-</div>
-
-<div class="card">
-    <h3>How It Works</h3>
-    <ol style="line-height: 2;">
-        <li><strong>Pre-Ride Safety Check:</strong> AI analyzes driver profile, route, and timing to calculate risk score</li>
-        <li><strong>Real-Time Guardian:</strong> Voice AI monitors conversations and detects distress signals</li>
-        <li><strong>Smart Interventions:</strong> Contextual check-ins and emergency options when needed</li>
-        <li><strong>Post-Ride Report:</strong> Encrypted safety logs and insights for continuous improvement</li>
-    </ol>
 </div>
 {% endblock %}
