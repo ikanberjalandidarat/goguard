@@ -190,8 +190,7 @@ def load_locations_from_csv(file_path: str = 'locations.csv') -> Dict:
             
             locations[key] = location_data
         
-        # Add some standard keys for compatibility with your existing code
-        # Map some locations to your original keys
+        # Map some locations to the original keys (For prototypes)
         if '001' in locations:  # Home location
             locations['home'] = locations['001']
         if '002' in locations:  # Office location
@@ -270,8 +269,9 @@ def search_safety_news(pickup_area: str, dropoff_area: str) -> List[Dict]:
         # Prepare search queries
         queries = [
             f"kecelakaan ojol {pickup_area} OR {dropoff_area} Jakarta",
-            f"penculikan {pickup_area} {dropoff_area} Jakarta",
-            f"kriminal {pickup_area} OR {dropoff_area} malam"
+            f"penculikan ojol {pickup_area} {dropoff_area} Jakarta",
+            f"demo macet bahaya {pickup_area} OR {dropoff_area} malam",
+            f"begal ojol {pickup_area} OR {dropoff_area} malam",
         ]
         
         all_results = []
