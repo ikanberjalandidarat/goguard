@@ -1024,20 +1024,21 @@ function calculateRisk() {
     const dropoff = document.getElementById('dropoff').value;
     document.getElementById('loadingSpinner').style.display = 'block'; // Show spinner
     
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
     fetch('/api/calculate-risk', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({pickup, dropoff})
     })
     .then(res => res.json())
-    .then(data => {
-        document.getElementById('loadingSpinner').style.display = 'none'; // Hide spinner
+    
+    const delayPromise = new Promise(resolve => setTimeout(resolve, 3000));
 
-        currentRiskData = data;
-        showSafetyModal(data);
-    });
+    Promise.all([fetchPromise, delayPromise])
+        .then(([data]) => {
+            document.getElementById('loadingSpinner').style.display = 'none'; // Hide spinner
+            currentRiskData = data;
+            showSafetyModal(data);
+        });
 }
 
 function showSafetyModal(data) {
