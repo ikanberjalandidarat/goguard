@@ -1006,7 +1006,6 @@ if __name__ == '__main__':
 <!-- Loading Spinner -->
 <div id="loadingSpinner" style="display: none; text-align: center; padding: 20px;">
   <img src="https://i.imgur.com/Yk52CBY.gif" alt="Loading..."/>
-
 </div>
 
 <style>
@@ -1523,4 +1522,4 @@ setInterval(() => {
     print("4. Watch AI responses adapt to context")
     print("\nPress Ctrl+C to stop the server")
     
-    app.run(debug=True, port=5000)
+    app.run(debug=False, port=5000)
