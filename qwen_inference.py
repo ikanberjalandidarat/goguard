@@ -218,6 +218,8 @@ class QwenSafetyAI:
         except Exception as e:
             print(f"Summary generation error: {e}")
             return self._get_default_summary(ride_data)
+        
+    
     
     def _analyze_keywords(self, transcript: str) -> Dict:
         """Fallback keyword-based analysis"""
@@ -307,7 +309,8 @@ class QwenSafetyAI:
                 "Continue using GoGuard for all rides",
                 "Consider Safe Route mode for future late-night trips"
             ],
-            "concerns": []
+            "concerns": [],
+            'qwen_response': 'test'
         }
 
 # Example usage
