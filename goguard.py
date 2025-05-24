@@ -81,13 +81,13 @@ class Ride:
     safety_events: List[Dict] = None
 
 # Mock Database
-ALL_DRIVERS = [
+MOCK_DRIVERS = [
     Driver("D001", "Ahmad Rizki", "driver1.jpg", 4.8, 1523, 0.92, "B 1234 ABC", "Honda Vario"),
     Driver("D002", "Budi Santoso", "driver2.jpg", 4.5, 892, 0.85, "B 5678 DEF", "Yamaha NMAX"),
     Driver("D003", "Cahyo Prakoso", "driver3.jpg", 4.2, 234, 0.75, "B 9012 GHI", "Honda Beat"),
 ]
 
-ALL_LOCATIONS = {
+MOCK_LOCATIONS = {
     "home": {"name": "Home - Apartment Sudirman Park", "coords": (-6.2088, 106.8456), "safety_score": 0.9},
     "office": {"name": "GoTower - Pasaraya", "coords": (-6.2433, 106.7987), "safety_score": 0.95},
     "mall": {"name": "Grand Indonesia Mall", "coords": (-6.1951, 106.8218), "safety_score": 0.88},
@@ -571,7 +571,7 @@ if __name__ == '__main__':
     os.makedirs('templates', exist_ok=True)
     
     # Load the data
-    ALL_DRIVERS, ALL_LOCATIONS, location_mapping = load_csv_data()
+    MOCK_DRIVERS, MOCK_LOCATIONS, location_mapping = load_csv_data()
     
     # Create base template
     base_html = '''<!DOCTYPE html>
