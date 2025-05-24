@@ -58,9 +58,6 @@
             <p style="color: #1976D2;">• {{ report.qwen_response }}</p>
         </div>
     </div>
-    
-    
-
 
     <div class="card" style="background: #F5F5F5;">
         <h4 style="margin-bottom: 12px;">🔐 Data Security</h4>
@@ -70,7 +67,7 @@
         </p>
         
         <div style="margin-top: 16px;">
-            <button class="btn btn-secondary" style="font-size: 14px; padding: 10px 16px;">
+            <button id="downloadBtn" data-ride-id="{{ report.ride_id }}" class="btn btn-secondary" style="font-size: 14px; padding: 10px 16px;">
                 Download Report
             </button>
         </div>
@@ -82,4 +79,17 @@
         </a>
     </div>
 </div>
+
+<script>
+const rideId = "{{ report.ride_id }}";
+
+document.getElementById("downloadBtn").addEventListener("click", () => {
+    const link = document.createElement("a");
+    link.href = `/download-report/${rideId}`;
+    link.download = `ride_report_${rideId}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+});
+</script>
 {% endblock %}
