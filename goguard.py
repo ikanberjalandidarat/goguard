@@ -13,15 +13,16 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional
 import pandas as pd
 import os
+from typing import Tuple
 import base64
 import hashlib
 
 # Import Qwen AI integration
 try:
-    from qwen_ai import QwenSafetyAI
+    from qwen_inference import QwenSafetyAI
     ai_assistant = QwenSafetyAI()
-except:
-    print("Qwen AI module not found. Using fallback AI simulation.")
+except Exception as e:
+    print(f"Qwen AI module not found. Using fallback AI simulation: {e}")
     ai_assistant = None
 
 app = Flask(__name__)
@@ -252,6 +253,8 @@ def calculate_ride_risk_score(driver: Driver, pickup: str, dropoff: str, time_of
             "pickup": MOCK_LOCATIONS[pickup]['name'],
             "dropoff": MOCK_LOCATIONS[dropoff]['name']
         }
+        
+        
         return ai_assistant.analyze_ride_safety(ride_data)
     
     # Fallback calculation
@@ -373,7 +376,7 @@ def start_ride():
         dropoff_location=MOCK_LOCATIONS[data['dropoff']]['name'],
         pickup_coords=MOCK_LOCATIONS[data['pickup']]['coords'],
         dropoff_coords=MOCK_LOCATIONS[data['dropoff']]['coords'],
-        estimated_duration=random.randint(15, 45),
+        estimated_duration=random.randint(1, 3), # For testing purposes
         route_type=data.get('route_type', 'standard'),
         status='ACTIVE',
         start_time=datetime.now(),
@@ -509,10 +512,12 @@ def end_ride(ride_id):
 @app.route('/safety-report/<ride_id>')
 def safety_report(ride_id):
     """Display post-ride safety report"""
+    
+    
     mock_report = {
         "ride_id": ride_id,
         "overall_safety_score": 0.92,
-        "duration": "23 minutes",
+        "duration": f"X minutes",
         "route_compliance": "98%",
         "driver_behavior": "Excellent",
         "incidents": 0,
@@ -998,13 +1003,27 @@ if __name__ == '__main__':
     </div>
 </div>
 
+<!-- Loading Spinner -->
+<div id="loadingSpinner" style="display: none; text-align: center; padding: 20px;">
+  <img src="https://i.imgur.com/Yk52CBY.gif" alt="Loading..."/>
+
+</div>
+
+<style>
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>
+
 <script>
 let currentRiskData = null;
 
 function calculateRisk() {
     const pickup = document.getElementById('pickup').value;
     const dropoff = document.getElementById('dropoff').value;
-    
+    document.getElementById('loadingSpinner').style.display = 'block'; // Show spinner
+
     fetch('/api/calculate-risk', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -1012,6 +1031,8 @@ function calculateRisk() {
     })
     .then(res => res.json())
     .then(data => {
+        document.getElementById('loadingSpinner').style.display = 'none'; // Hide spinner
+
         currentRiskData = data;
         showSafetyModal(data);
     });

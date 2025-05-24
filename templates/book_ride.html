@@ -53,13 +53,27 @@
     </div>
 </div>
 
+<!-- Loading Spinner -->
+<div id="loadingSpinner" style="display: none; text-align: center; padding: 20px;">
+  <img src="https://i.imgur.com/Yk52CBY.gif" alt="Loading..."/>
+
+</div>
+
+<style>
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>
+
 <script>
 let currentRiskData = null;
 
 function calculateRisk() {
     const pickup = document.getElementById('pickup').value;
     const dropoff = document.getElementById('dropoff').value;
-    
+    document.getElementById('loadingSpinner').style.display = 'block'; // Show spinner
+
     fetch('/api/calculate-risk', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -67,6 +81,8 @@ function calculateRisk() {
     })
     .then(res => res.json())
     .then(data => {
+        document.getElementById('loadingSpinner').style.display = 'none'; // Hide spinner
+
         currentRiskData = data;
         showSafetyModal(data);
     });

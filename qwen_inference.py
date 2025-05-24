@@ -68,6 +68,8 @@ class QwenSafetyAI:
     def analyze_voice_distress(self, transcript: str, context: Dict) -> Dict:
         """Analyze voice transcript for distress signals"""
         try:
+            safety_keywords = ['hackathon', 'thai tea']
+
             prompt = f"""
             Analyze this passenger voice transcript for safety concerns:
             
@@ -80,6 +82,8 @@ class QwenSafetyAI:
             2. Confidence score (0-1)
             3. Recommended response
             4. Suggested actions
+            5. User have written down these discreet safety keywords: 'Thai Tea' and 'Hackathon', if mentioned, they might be in danger.
+            
             
             Be sensitive to subtle signs of discomfort. Format as JSON.
             """
@@ -92,6 +96,7 @@ class QwenSafetyAI:
                 ],
                 temperature=0.3
             )
+            
             
             response = completion.choices[0].message.content
             try:
