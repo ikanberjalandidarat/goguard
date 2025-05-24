@@ -31,6 +31,19 @@
             Check Safety & Continue
         </button>
     </div>
+    
+    <!-- News Alert Section -->
+    <div id="newsAlert" style="display: none;">
+        <div class="card news-alert">
+            <h4 style="margin-bottom: 12px;">📰 AI Safety Intelligence - Recent Area Updates</h4>
+            <div id="newsContent">
+                <div style="text-align: center; padding: 20px;">
+                    <div class="loading-spinner"></div>
+                    <p style="margin-top: 12px; color: #666;">Analyzing safety data from multiple sources...</p>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Safety Modal -->
@@ -68,6 +81,7 @@
 <script>
 let currentRiskData = null;
 
+
 function calculateRisk() {
     const pickup = document.getElementById('pickup').value;
     const dropoff = document.getElementById('dropoff').value;
@@ -86,6 +100,94 @@ function calculateRisk() {
         showSafetyModal(data);
     });
 }
+
+let newsData = [];
+
+function calculateRisk() {
+    const pickup = document.getElementById('pickup').value;
+    const dropoff = document.getElementById('dropoff').value;
+    
+    document.getElementById('loadingSpinner').style.display = 'block'; // Show spinner
+    document.getElementById('newsAlert').style.display = 'block'; // Show news section immediately
+
+    fetch('/api/calculate-risk', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ pickup, dropoff })
+    })
+    .then(res => res.json())
+    .then(data => {
+        currentRiskData = data;
+        
+        const newsContent = document.getElementById('newsContent');
+        const newsItems = data.news_analysis?.news_items || [];
+        const impact = data.news_analysis?.impact;
+
+        if (!newsItems || newsItems.length === 0) {
+            newsContent.innerHTML = `
+                <div class="news-box safe">
+                    <div class="icon">✅</div>
+                    <div class="headline">No recent safety incidents reported</div>
+                    <div class="summary">This area has been safe in the past week</div>
+                </div>
+            `;
+        } else {
+            let newsHtml = '';
+
+            if (impact && impact.risk_increase > 0) {
+                newsHtml += `
+                    <div class="news-alert-box">
+                        <div class="icon">⚠️ Safety Alert</div>
+                        <div class="headline">
+                            Recent incidents detected. Risk increased by ${impact.risk_increase}%
+                        </div>
+                        <div class="summary">
+                            ${impact.severity_summary.high} high severity<br>
+                            ${impact.severity_summary.medium} medium severity
+                        </div>
+                    </div>
+                `;
+            }
+
+            newsItems.forEach(item => {
+                const severityIcon = item.severity === 'high' ? '🚨' :
+                                     item.severity === 'medium' ? '⚠️' : 'ℹ️';
+                const severityLabel = item.severity?.toUpperCase() || 'LOW';
+
+                newsHtml += `
+                    <div class="news-item">
+                        <div class="title">${item.title}</div>
+                        <div class="snippet">${item.snippet}</div>
+                        <div class="meta">
+                            ${item.source} • ${item.date} • ${severityIcon} ${severityLabel}
+                        </div>
+                    </div>
+                `;
+            });
+
+            newsHtml += `
+                <div class="news-footer">
+                    Areas analyzed: ${currentRiskData.locations.pickup_area} → ${currentRiskData.locations.dropoff_area}<br>
+                    Data sources: News articles, police reports, community alerts<br>
+                    Last updated: ${new Date().toLocaleTimeString()}
+                </div>
+            `;
+
+            newsContent.innerHTML = newsHtml;
+        }
+
+        // Show safety modal after a short delay
+        setTimeout(() => showSafetyModal(data), 1000);
+    })
+    .catch(error => {
+        console.error('Risk calculation error:', error);
+        document.getElementById('newsContent').innerHTML = `
+            <div class="error-message">❌ Unable to fetch safety data. Please try again.</div>
+        `;
+    });
+}
+
+
 
 function showSafetyModal(data) {
     const riskLevel = data.risk_analysis.risk_level || data.risk_analysis.level;

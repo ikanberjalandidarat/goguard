@@ -143,6 +143,7 @@ function initVoiceRecognition() {
         voiceRecognition.onresult = function(event) {
             const last = event.results.length - 1;
             const transcript = event.results[last][0].transcript;
+            console.log(transcript)
             
             document.getElementById('voiceStatus').textContent = `"${transcript}"`;
             

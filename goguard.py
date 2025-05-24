@@ -27,6 +27,15 @@ except Exception as e:
     print(f"Qwen AI module not found. Using fallback AI simulation: {e}")
     ai_assistant = None
 
+# Import SerpAPI
+try:
+    from serpapi import GoogleSearch
+    SERPAPI_KEY = "99bc69e7729d9076fb8b863ba4f99df50286f1816be181bd578f646905aa1cba"
+except:
+    print("SerpAPI not installed. Using requests fallback.")
+    SERPAPI_KEY = "99bc69e7729d9076fb8b863ba4f99df50286f1816be181bd578f646905aa1cba"
+
+
 app = Flask(__name__)
 app.secret_key = 'goguard-secret-key-hackathon-2024'
 
@@ -243,6 +252,129 @@ def load_csv_data():
     """One-line method to load all CSV data and return as tuple"""
     return load_all_data()
 
+news_cache = {}  # Cache news results to avoid excessive API calls
+
+# News Analysis Functions
+def search_safety_news(pickup_area: str, dropoff_area: str) -> List[Dict]:
+    """Search for safety-related news using SerpAPI"""
+    cache_key = f"{pickup_area}_{dropoff_area}_{datetime.now().strftime('%Y%m%d')}"
+    
+    # Check cache first (24-hour cache)
+    if cache_key in news_cache:
+        cached_data = news_cache[cache_key]
+        if (datetime.now() - cached_data['timestamp']).seconds < 86400:  # 24 hours
+            return cached_data['results']
+    
+    try:
+        # Prepare search queries
+        queries = [
+            f"kecelakaan ojol {pickup_area} OR {dropoff_area} Jakarta",
+            f"penculikan {pickup_area} {dropoff_area} Jakarta",
+            f"kriminal {pickup_area} OR {dropoff_area} malam"
+        ]
+        
+        all_results = []
+        
+        for query in queries:
+            params = {
+                "q": query,
+                "location": "Jakarta, Indonesia",
+                "hl": "id",
+                "gl": "id",
+                "google_domain": "google.co.id",
+                "api_key": SERPAPI_KEY,
+                "num": 5,  # Limit results per query
+                "tbs": "qdr:w"  # Results from past week
+            }
+            
+            try:
+                # Try using serpapi library if available
+                search = GoogleSearch(params)
+                results = search.get_dict()
+            except:
+                # Fallback to requests
+                response = requests.get('https://serpapi.com/search', params=params)
+                results = response.json()
+            
+            if 'organic_results' in results:
+                for result in results['organic_results'][:3]:  # Top 3 per query
+                    news_item = {
+                        'title': result.get('title', ''),
+                        'snippet': result.get('snippet', ''),
+                        'source': result.get('source', 'Unknown'),
+                        'link': result.get('link', ''),
+                        'date': result.get('date', 'Recent'),
+                        'severity': analyze_news_severity(result)
+                    }
+                    all_results.append(news_item)
+        
+        # Cache results
+        news_cache[cache_key] = {
+            'timestamp': datetime.now(),
+            'results': all_results
+        }
+        
+        return all_results
+        
+    except Exception as e:
+        print(f"News search error: {e}")
+        return []
+
+def analyze_news_severity(news_item: Dict) -> str:
+    """Analyze news severity based on content"""
+    title = news_item.get('title', '').lower()
+    snippet = news_item.get('snippet', '').lower()
+    combined_text = title + ' ' + snippet
+    
+    # High severity keywords
+    high_severity = ['penculikan', 'pembunuhan', 'pemerkosaan', 'perampokan', 
+                     'begal', 'tewas', 'meninggal', 'korban jiwa']
+    
+    # Medium severity keywords
+    medium_severity = ['kecelakaan', 'tabrakan', 'luka', 'terluka', 'pencurian',
+                       'copet', 'jambret', 'kriminal']
+    
+    # Check severity
+    if any(keyword in combined_text for keyword in high_severity):
+        return 'high'
+    elif any(keyword in combined_text for keyword in medium_severity):
+        return 'medium'
+    else:
+        return 'low'
+
+def calculate_news_impact_on_safety(news_results: List[Dict], base_score: float) -> Dict:
+    """Calculate how news impacts the safety score"""
+    if not news_results:
+        return {
+            'adjusted_score': base_score,
+            'news_factor': 1.0,
+            'risk_increase': 0
+        }
+    
+    # Count severity levels
+    severity_counts = {'high': 0, 'medium': 0, 'low': 0}
+    for news in news_results:
+        severity_counts[news.get('severity', 'low')] += 1
+    
+    # Calculate impact
+    news_factor = 1.0
+    if severity_counts['high'] > 0:
+        news_factor = 0.75  # 25% reduction for high severity news
+    elif severity_counts['medium'] >= 2:
+        news_factor = 0.85  # 15% reduction for multiple medium severity
+    elif severity_counts['medium'] == 1:
+        news_factor = 0.92  # 8% reduction for single medium severity
+    
+    adjusted_score = base_score * news_factor
+    risk_increase = round((1 - news_factor) * 100)
+    
+    return {
+        'adjusted_score': adjusted_score,
+        'news_factor': news_factor,
+        'risk_increase': risk_increase,
+        'severity_summary': severity_counts
+    }
+
 # AI Safety Analysis Functions
 def calculate_ride_risk_score(driver: Driver, pickup: str, dropoff: str, time_of_day: int) -> Dict:
     """Calculate risk score using Qwen AI or fallback"""
@@ -255,8 +387,6 @@ def calculate_ride_risk_score(driver: Driver, pickup: str, dropoff: str, time_of
             "pickup": MOCK_LOCATIONS[pickup]['name'],
             "dropoff": MOCK_LOCATIONS[dropoff]['name']
         }
-        
-        
         return ai_assistant.analyze_ride_safety(ride_data)
     
     # Fallback calculation
@@ -342,11 +472,11 @@ def book_ride():
 
 @app.route('/api/calculate-risk', methods=['POST'])
 def calculate_risk():
-    
-    """API endpoint for risk calculation"""
+    """API endpoint for risk calculation with news integration"""
     data = request.json
     driver = random.choice(MOCK_DRIVERS)
     
+    # Get base risk analysis
     risk_analysis = calculate_ride_risk_score(
         driver,
         data['pickup'],
@@ -354,7 +484,35 @@ def calculate_risk():
         datetime.now().hour
     )
     
-    time.sleep(3)
+    # Get location names for news search
+    pickup_name = MOCK_LOCATIONS.get(data['pickup'], {}).get('name', '')
+    dropoff_name = MOCK_LOCATIONS.get(data['dropoff'], {}).get('name', '')
+    
+    # Extract area names
+    pickup_area = extract_area_name(pickup_name)
+    dropoff_area = extract_area_name(dropoff_name)
+    
+    # Search for safety news
+    news_results = search_safety_news(pickup_area, dropoff_area)
+    
+    # Calculate news impact on safety
+    news_impact = calculate_news_impact_on_safety(
+        news_results, 
+        risk_analysis.get('safety_score', risk_analysis.get('score', 0.85))
+    )
+    
+    # Update risk analysis with news impact
+    risk_analysis['original_score'] = risk_analysis.get('safety_score', risk_analysis.get('score'))
+    risk_analysis['safety_score'] = news_impact['adjusted_score']
+    risk_analysis['score'] = news_impact['adjusted_score']
+    
+    # Adjust risk level based on new score
+    if news_impact['adjusted_score'] < 0.7:
+        risk_analysis['risk_level'] = 'HIGH'
+        risk_analysis['level'] = 'HIGH'
+    elif news_impact['adjusted_score'] < 0.85:
+        risk_analysis['risk_level'] = 'MEDIUM'
+        risk_analysis['level'] = 'MEDIUM'
     
     return jsonify({
         "driver": {
@@ -364,8 +522,67 @@ def calculate_risk():
             "vehicle": driver.vehicle_number
         },
         "risk_analysis": risk_analysis,
-        "safe_route_available": risk_analysis.get('risk_level', 'LOW') != 'LOW'
+        "safe_route_available": risk_analysis.get('risk_level', 'LOW') != 'LOW',
+        "locations": {
+            "pickup": pickup_name,
+            "dropoff": dropoff_name,
+            "pickup_area": pickup_area,
+            "dropoff_area": dropoff_area
+        },
+        "news_analysis": {
+            "news_found": len(news_results),
+            "news_items": news_results[:5],  # Limit to 5 items for UI
+            "impact": news_impact,
+            "timestamp": datetime.now().isoformat()
+        }
     })
+    
+def extract_area_name(location: str) -> str:
+    """Extract area name from full location string"""
+    # Common Jakarta area mappings
+    area_mappings = {
+        'Sudirman': ['Sudirman', 'Jalan Sudirman'],
+        'Kemang': ['Kemang', 'Jalan Kemang'],
+        'Senayan': ['Senayan', 'Jalan Senayan'],
+        'Thamrin': ['Thamrin', 'Grand Indonesia'],
+        'Blok M': ['Blok M', 'Pasaraya'],
+        'Serpong': ['Serpong', 'BSD'],
+        'PIK': ['PIK', 'Pantai Indah Kapuk'],
+        'Kelapa Gading': ['Kelapa Gading', 'Gading'],
+        'Pondok Indah': ['Pondok Indah', 'PI'],
+        'Kuningan': ['Kuningan', 'Rasuna Said']
+    }
+    
+    location_lower = location.lower()
+    for area, keywords in area_mappings.items():
+        for keyword in keywords:
+            if keyword.lower() in location_lower:
+                return area
+    
+    # If no specific area found, try to extract from location
+    parts = location.split(' - ')
+    if len(parts) > 1:
+        return parts[1].split()[0]  # Get first word after dash
+    
+    return location.split()[0]  # Default to first word
+
+@app.route('/api/search-news', methods=['POST'])
+def api_search_news():
+    """Direct API endpoint for news search"""
+    data = request.json
+    pickup_area = data.get('pickup_area', 'Jakarta')
+    dropoff_area = data.get('dropoff_area', 'Jakarta')
+    
+    news_results = search_safety_news(pickup_area, dropoff_area)
+    
+    return jsonify({
+        "status": "success",
+        "news_count": len(news_results),
+        "news_items": news_results,
+        "areas_searched": [pickup_area, dropoff_area],
+        "timestamp": datetime.now().isoformat()
+    })
+
 
 @app.route('/api/start-ride', methods=['POST'])
 def start_ride():
@@ -986,6 +1203,19 @@ if __name__ == '__main__':
             Check Safety & Continue
         </button>
     </div>
+    
+    <!-- News Alert Section -->
+    <div id="newsAlert" style="display: none;">
+        <div class="card news-alert">
+            <h4 style="margin-bottom: 12px;">📰 AI Safety Intelligence - Recent Area Updates</h4>
+            <div id="newsContent">
+                <div style="text-align: center; padding: 20px;">
+                    <div class="loading-spinner"></div>
+                    <p style="margin-top: 12px; color: #666;">Analyzing safety data from multiple sources...</p>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Safety Modal -->
@@ -1023,6 +1253,7 @@ if __name__ == '__main__':
 <script>
 let currentRiskData = null;
 
+
 function calculateRisk() {
     const pickup = document.getElementById('pickup').value;
     const dropoff = document.getElementById('dropoff').value;
@@ -1041,6 +1272,94 @@ function calculateRisk() {
         showSafetyModal(data);
     });
 }
+
+let newsData = [];
+
+function calculateRisk() {
+    const pickup = document.getElementById('pickup').value;
+    const dropoff = document.getElementById('dropoff').value;
+    
+    document.getElementById('loadingSpinner').style.display = 'block'; // Show spinner
+    document.getElementById('newsAlert').style.display = 'block'; // Show news section immediately
+
+    fetch('/api/calculate-risk', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ pickup, dropoff })
+    })
+    .then(res => res.json())
+    .then(data => {
+        currentRiskData = data;
+        
+        const newsContent = document.getElementById('newsContent');
+        const newsItems = data.news_analysis?.news_items || [];
+        const impact = data.news_analysis?.impact;
+
+        if (!newsItems || newsItems.length === 0) {
+            newsContent.innerHTML = `
+                <div class="news-box safe">
+                    <div class="icon">✅</div>
+                    <div class="headline">No recent safety incidents reported</div>
+                    <div class="summary">This area has been safe in the past week</div>
+                </div>
+            `;
+        } else {
+            let newsHtml = '';
+
+            if (impact && impact.risk_increase > 0) {
+                newsHtml += `
+                    <div class="news-alert-box">
+                        <div class="icon">⚠️ Safety Alert</div>
+                        <div class="headline">
+                            Recent incidents detected. Risk increased by ${impact.risk_increase}%
+                        </div>
+                        <div class="summary">
+                            ${impact.severity_summary.high} high severity<br>
+                            ${impact.severity_summary.medium} medium severity
+                        </div>
+                    </div>
+                `;
+            }
+
+            newsItems.forEach(item => {
+                const severityIcon = item.severity === 'high' ? '🚨' :
+                                     item.severity === 'medium' ? '⚠️' : 'ℹ️';
+                const severityLabel = item.severity?.toUpperCase() || 'LOW';
+
+                newsHtml += `
+                    <div class="news-item">
+                        <div class="title">${item.title}</div>
+                        <div class="snippet">${item.snippet}</div>
+                        <div class="meta">
+                            ${item.source} • ${item.date} • ${severityIcon} ${severityLabel}
+                        </div>
+                    </div>
+                `;
+            });
+
+            newsHtml += `
+                <div class="news-footer">
+                    Areas analyzed: ${currentRiskData.locations.pickup_area} → ${currentRiskData.locations.dropoff_area}<br>
+                    Data sources: News articles, police reports, community alerts<br>
+                    Last updated: ${new Date().toLocaleTimeString()}
+                </div>
+            `;
+
+            newsContent.innerHTML = newsHtml;
+        }
+
+        // Show safety modal after a short delay
+        setTimeout(() => showSafetyModal(data), 1000);
+    })
+    .catch(error => {
+        console.error('Risk calculation error:', error);
+        document.getElementById('newsContent').innerHTML = `
+            <div class="error-message">❌ Unable to fetch safety data. Please try again.</div>
+        `;
+    });
+}
+
+
 
 function showSafetyModal(data) {
     const riskLevel = data.risk_analysis.risk_level || data.risk_analysis.level;
@@ -1240,6 +1559,7 @@ function initVoiceRecognition() {
         voiceRecognition.onresult = function(event) {
             const last = event.results.length - 1;
             const transcript = event.results[last][0].transcript;
+            console.log(transcript)
             
             document.getElementById('voiceStatus').textContent = `"${transcript}"`;
             
