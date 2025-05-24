@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Book Safe Ride{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>Book Your Safe Ride</h2>
+    
+    <div class="grid">
+        <div>
+            <label style="display: block; margin-bottom: 8px; font-weight: bold;">Pickup Location</label>
+            <select id="pickup" class="voice-input" style="width: 100%;">
+                {% for key, loc in locations.items() %}
+                <option value="{{ key }}">{{ loc.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div>
+            <label style="display: block; margin-bottom: 8px; font-weight: bold;">Dropoff Location</label>
+            <select id="dropoff" class="voice-input" style="width: 100%;">
+                {% for key, loc in locations.items() %}
+                <option value="{{ key }}">{{ loc.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    
+    <div style="margin-top: 20px;">
+        <button onclick="calculateRisk()" class="btn">Calculate Safety Score</button>
+    </div>
+</div>
+
+<div id="riskAnalysis" style="display: none;">
+    <div class="card">
+        <h3>AI Safety Analysis</h3>
+        <div id="riskContent"></div>
+    </div>
+</div>
+
+<div id="rideOptions" style="display: none;">
+    <div class="card">
+        <h3>Choose Your Ride Mode</h3>
+        <div class="grid">
+            <div class="card" style="border: 2px solid #00AA13; cursor: pointer;" onclick="startRide('standard')">
+                <h4>Standard Route</h4>
+                <p>Fastest route to destination</p>
+                <p style="color: #666; margin-top: 8px;">ETA: <span id="etaStandard">15 mins</span></p>
+            </div>
+            <div class="card" style="border: 2px solid #2196F3; cursor: pointer;" onclick="startRide('safe')">
+                <h4>🛡️ Safe Route Mode</h4>
+                <p>Well-lit streets with higher surveillance</p>
+                <p style="color: #666; margin-top: 8px;">ETA: <span id="etaSafe">18 mins</span></p>
+                <p style="color: #2196F3; font-weight: bold;">+3 mins for extra safety</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function calculateRisk() {
+    const pickup = document.getElementById('pickup').value;
+    const dropoff = document.getElementById('dropoff').value;
+    
+    fetch('/api/calculate-risk', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({pickup, dropoff})
+    })
+    .then(res => res.json())
+    .then(data => {
+        displayRiskAnalysis(data);
+    });
+}
+
+function displayRiskAnalysis(data) {
+    const riskClass = data.risk_analysis.level.toLowerCase();
+    const riskHtml = `
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h2>Safety Score: ${data.risk_analysis.score}</h2>
+            <span class="risk-score risk-${riskClass}">${data.risk_analysis.level} RISK</span>
+        </div>
+        
+        <div class="grid">
+            <div>
+                <h4>Driver Profile</h4>
+                <p><strong>${data.driver.name}</strong></p>
+                <p>Rating: ⭐ ${data.driver.rating}</p>
+                <p>Completed Rides: ${data.driver.rides}</p>
+                <p>Vehicle: ${data.driver.vehicle}</p>
+            </div>
+            
+            <div>
+                <h4>Safety Factors</h4>
+                <p>Driver Score: ${data.risk_analysis.factors.driver}</p>
+                <p>Location Safety: ${data.risk_analysis.factors.location}</p>
+                <p>Time Factor: ${data.risk_analysis.factors.time}</p>
+                <p>Experience: ${data.risk_analysis.factors.experience}</p>
+            </div>
+        </div>
+        
+        ${data.risk_analysis.level !== 'LOW' ? `
+        <div class="emergency-panel">
+            <strong>⚠️ GoGuard Recommendation:</strong> Consider using Safe Route Mode for this ride.
+            Additional safety features will be activated.
+        </div>
+        ` : ''}
+    `;
+    
+    document.getElementById('riskContent').innerHTML = riskHtml;
+    document.getElementById('riskAnalysis').style.display = 'block';
+    document.getElementById('rideOptions').style.display = 'block';
+}
+
+function startRide(routeType) {
+    const pickup = document.getElementById('pickup').value;
+    const dropoff = document.getElementById('dropoff').value;
+    
+    fetch('/api/start-ride', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({pickup, dropoff, route_type: routeType})
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'STARTED') {
+            window.location.href = `/ride-monitor/${data.ride_id}`;
+        }
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}Ride Monitor{% endblock %}
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>GoGuard Active <span class="status-indicator status-active"></span></h2>
+        <button onclick="endRide()" class="btn btn-secondary">End Ride</button>
+    </div>
+    
+    <div class="grid" style="margin-top: 20px;">
+        <div>
+            <p><strong>From:</strong> {{ ride.pickup_location }}</p>
+            <p><strong>To:</strong> {{ ride.dropoff_location }}</p>
+        </div>
+        <div>
+            <p><strong>Driver:</strong> {{ ride.driver.name }}</p>
+            <p><strong>Vehicle:</strong> {{ ride.driver.vehicle_number }}</p>
+        </div>
+    </div>
+    
+    <div style="margin-top: 20px;">
+        <p><strong>Ride Progress</strong></p>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressBar" style="width: 0%;"></div>
+        </div>
+        <p style="text-align: center; margin-top: 8px;">
+            <span id="elapsedTime">0</span> / {{ ride.estimated_duration }} minutes
+        </p>
+    </div>
+</div>
+
+<div class="card">
+    <h3>🎤 Voice Guardian</h3>
+    <p>I'm listening for your safety. Just speak naturally if you need help.</p>
+    
+    <div style="margin-top: 16px;">
+        <input type="text" id="voiceInput" class="voice-input" 
+               placeholder="Simulate voice input: Try saying 'I feel uncomfortable' or 'Help'">
+        <button onclick="checkVoice()" class="btn" style="margin-top: 8px;">Analyze Voice</button>
+    </div>
+    
+    <div id="aiResponse" style="margin-top: 16px; display: none;">
+        <div class="card" style="background: #E3F2FD;">
+            <h4>🤖 GoGuard AI:</h4>
+            <p id="aiMessage"></p>
+            <div id="emergencyActions" style="margin-top: 12px;"></div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Safety Events Log</h3>
+    <div id="safetyEvents">
+        <p style="color: #666;">No events detected - Your ride is progressing safely</p>
+    </div>
+</div>
+
+<div class="emergency-panel" style="display: none;" id="emergencyPanel">
+    <h3>🚨 Emergency Options</h3>
+    <div class="grid">
+        <button onclick="triggerEmergency('contact_emergency')" class="btn btn-danger">
+            Call Emergency
+        </button>
+        <button onclick="triggerEmergency('share_location')" class="btn btn-danger">
+            Share Location
+        </button>
+        <button onclick="triggerEmergency('silent_alarm')" class="btn btn-danger">
+            Silent Alarm
+        </button>
+    </div>
+</div>
+
+<script>
+const rideId = '{{ ride.id }}';
+let updateInterval;
+
+function updateRideStatus() {
+    fetch(`/api/ride-status/${rideId}`)
+        .then(res => res.json())
+        .then(data => {
+            // Update progress bar
+            document.getElementById('progressBar').style.width = data.progress + '%';
+            document.getElementById('elapsedTime').textContent = Math.round(data.elapsed_minutes);
+            
+            // Update safety events
+            if (data.safety_events.length > 0) {
+                const eventsHtml = data.safety_events.map(event => {
+                    const eventClass = event.level === 'DISTRESS' ? 'distress' : '';
+                    return `
+                        <div class="safety-event ${eventClass}">
+                            <strong>${event.type}</strong> - ${new Date(event.timestamp).toLocaleTimeString()}
+                            <p>${event.details || ''}</p>
+                        </div>
+                    `;
+                }).join('');
+                document.getElementById('safetyEvents').innerHTML = eventsHtml;
+            }
+            
+            // Check if ride completed
+            if (data.progress >= 100) {
+                clearInterval(updateInterval);
+                setTimeout(() => endRide(), 2000);
+            }
+        });
+}
+
+function checkVoice() {
+    const voiceText = document.getElementById('voiceInput').value;
+    
+    fetch('/api/voice-check', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            ride_id: rideId,
+            text: voiceText
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById('aiMessage').textContent = data.ai_response;
+        document.getElementById('aiResponse').style.display = 'block';
+        
+        if (data.suggested_actions.length > 0) {
+            const actionsHtml = data.suggested_actions.map(action => {
+                const actionLabels = {
+                    'contact_emergency': '📞 Contact Emergency',
+                    'share_location': '📍 Share Location',
+                    'silent_alarm': '🔕 Silent Alarm',
+                    'call_support': '☎️ Call Support'
+                };
+                return `<button onclick="triggerEmergency('${action}')" class="btn btn-danger" style="margin-right: 8px;">
+                    ${actionLabels[action] || action}
+                </button>`;
+            }).join('');
+            
+            document.getElementById('emergencyActions').innerHTML = actionsHtml;
+            document.getElementById('emergencyPanel').style.display = 'block';
+        }
+        
+        // Clear input
+        document.getElementById('voiceInput').value = '';
+    });
+}
+
+function triggerEmergency(action) {
+    fetch('/api/emergency-action', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            ride_id: rideId,
+            action: action
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message);
+        updateRideStatus();
+    });
+}
+
+function endRide() {
+    fetch(`/api/end-ride/${rideId}`, {method: 'POST'})
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'COMPLETED') {
+                window.location.href = `/safety-report/${rideId}`;
+            }
+        });
+}
+
+// Start monitoring
+updateInterval = setInterval(updateRideStatus, 3000);
+updateRideStatus();
+
+// Simulate automatic voice checks
+setInterval(() => {
+    if (Math.random() < 0.1) {  // 10% chance
+        document.getElementById('aiResponse').style.display = 'block';
+        document.getElementById('aiMessage').textContent = 
+            "Hi! Just checking in. Everything going well with your ride?";
+    }
+}, 30000);  // Every 30 seconds
+</script>
+{% endblock %}

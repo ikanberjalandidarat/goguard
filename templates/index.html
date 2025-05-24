@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>Welcome to GoGuard 🛡️</h2>
+    <p style="font-size: 18px; margin: 20px 0; line-height: 1.6;">
+        Your AI-powered safety companion for Gojek rides. GoGuard uses advanced AI to monitor your rides in real-time, 
+        ensuring you get home safely every time.
+    </p>
+    
+    <div class="grid" style="margin: 30px 0;">
+        <div class="card" style="background: #E8F5E9;">
+            <h3>🤖 AI-Powered Monitoring</h3>
+            <p>Real-time voice and behavior analysis to detect potential safety concerns</p>
+        </div>
+        <div class="card" style="background: #E3F2FD;">
+            <h3>🗺️ Smart Route Planning</h3>
+            <p>Choose safer routes with better lighting and surveillance</p>
+        </div>
+        <div class="card" style="background: #FFF3E0;">
+            <h3>🚨 Instant Emergency Response</h3>
+            <p>One-touch emergency alerts and automatic location sharing</p>
+        </div>
+    </div>
+    
+    <div style="text-align: center; margin-top: 40px;">
+        <a href="/book-ride" class="btn" style="font-size: 20px; padding: 16px 32px;">
+            Start Safe Ride Demo →
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <h3>How It Works</h3>
+    <ol style="line-height: 2;">
+        <li><strong>Pre-Ride Safety Check:</strong> AI analyzes driver profile, route, and timing to calculate risk score</li>
+        <li><strong>Real-Time Guardian:</strong> Voice AI monitors conversations and detects distress signals</li>
+        <li><strong>Smart Interventions:</strong> Contextual check-ins and emergency options when needed</li>
+        <li><strong>Post-Ride Report:</strong> Encrypted safety logs and insights for continuous improvement</li>
+    </ol>
+</div>
+{% endblock %}
