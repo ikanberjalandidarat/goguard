@@ -16,7 +16,8 @@ import os
 from typing import Tuple
 import base64
 import hashlib
-import time 
+import time
+
 
 # Import Qwen AI integration
 try:
@@ -1023,22 +1024,19 @@ function calculateRisk() {
     const pickup = document.getElementById('pickup').value;
     const dropoff = document.getElementById('dropoff').value;
     document.getElementById('loadingSpinner').style.display = 'block'; // Show spinner
-    
+
     fetch('/api/calculate-risk', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({pickup, dropoff})
     })
     .then(res => res.json())
-    
-    const delayPromise = new Promise(resolve => setTimeout(resolve, 3000));
+    .then(data => {
+        document.getElementById('loadingSpinner').style.display = 'none'; // Hide spinner
 
-    Promise.all([fetchPromise, delayPromise])
-        .then(([data]) => {
-            document.getElementById('loadingSpinner').style.display = 'none'; // Hide spinner
-            currentRiskData = data;
-            showSafetyModal(data);
-        });
+        currentRiskData = data;
+        showSafetyModal(data);
+    });
 }
 
 function showSafetyModal(data) {
