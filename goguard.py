@@ -3,13 +3,17 @@ GoGuard - AI Guardian Angel for Safe Rides
 Enhanced Hackathon Mockup with Voice Support and Gojek-like UI
 """
 
-from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, render_template, request, jsonify, session, send_file
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
 import json
 import random
 from datetime import datetime, timedelta
 import threading
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from typing import Dict, List, Optional
 import pandas as pd
 import os
@@ -18,6 +22,7 @@ import base64
 import hashlib
 import time
 import requests
+import io
 
 # Import Qwen AI integration
 try:
@@ -99,6 +104,7 @@ class Ride:
     status: str
     start_time: Optional[datetime] = None
     safety_events: List[Dict] = None
+    transcripts: List[str] = None
 
 # Mock Database
 MOCK_DRIVERS = [
@@ -116,7 +122,7 @@ MOCK_LOCATIONS = {
 }
 
 # In-memory storage for active rides
-active_rides = {}
+active_rides: Dict[str, Ride] = {}
 ride_reports = {}
 
 def load_drivers_from_csv(file_path: str = 'drivers.csv') -> List[Driver]:
@@ -610,7 +616,8 @@ def start_ride():
         route_type=data.get('route_type', 'standard'),
         status='ACTIVE',
         start_time=datetime.now(),
-        safety_events=[]
+        safety_events=[],
+        transcripts=[],
     )
     
     active_rides[ride_id] = ride
@@ -664,6 +671,7 @@ def voice_check():
         return jsonify({"error": "Ride not found"}), 404
     
     ride = active_rides[ride_id]
+    ride.transcripts.append(voice_text)
     elapsed = (datetime.now() - ride.start_time).seconds / 60
     
     context = {
@@ -766,7 +774,72 @@ def safety_report(ride_id):
     print("======== DEBUGGING =======")
     print(ride_reports[ride_id]['qwen_response'])
     
-    return render_template('safety_report.html', report=ride_reports[ride_id])
+    return render_template('safety_report.html', report={"ride_id": ride_id, **ride_reports[ride_id]})
+
+@app.route('/download-report/<ride_id>')
+def download_report(ride_id):
+    print("DOWNLOAD REPORT", ride_id)
+    
+    data = ride_reports[ride_id]
+    
+    print("Data", data)
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    elements = []
+
+    styles = getSampleStyleSheet()
+    title = Paragraph("Ride Safety Report", styles['Title'])
+    elements.append(title)
+    elements.append(Spacer(1, 12))
+
+    # Overview
+    overview_data = [
+        ["ID", data.get("id", "RIDE_NULL")],
+        ["Safety Score", data.get("safety_score", "")],
+        ["Driver", f"{data["driver"]["name"]} ({data["driver"]["phone"]})"],
+        ["Driver Rating", data["driver"]["rating"]],
+        ["Driver Vehicle", f"{data["driver"]["vehicle_color"]} {data["driver"]["vehicle_model"]} {data["driver"]["vehicle_number"]}"],
+        ["Pickup", f"{data.get("pickup_location", "Unknown")} {data.get("pickup_coords", "")}"],
+        ["Dropoff", f"{data.get("dropoff_location", "Unknown")} {data.get("dropoff_coords", "")}"],
+        ["Route Type", data.get("route_type", "")],
+        ["Duration", data.get("duration", "")],
+        # ["Incidents", data.get("incidents", "")],
+        ["Transcripts", data.get("transcripts", [])],
+        ["Recommendations", ', '.join(data.get("recommendations", []))],
+        ["Summary", data.get("qwen_response", "")],
+    ]
+    for key, value in overview_data:
+        elements.append(Paragraph(f"<b>{key}:</b> {value}", styles['Normal']))
+    elements.append(Spacer(1, 12))
+
+    # Safety Events
+    events = data.get("safety_events", [])
+    if events:
+        event_keys = list(events[0].keys())
+        table_data = [event_keys]  # headers
+        for event in events:
+            table_data.append([str(event.get(k, "")) for k in event_keys])
+
+        table = Table(table_data, repeatRows=1)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ]))
+        elements.append(Paragraph("Safety Events", styles['Heading2']))
+        elements.append(table)
+
+    doc.build(elements)
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name='ride_report.pdf',
+        mimetype='application/pdf'
+    )
 
 # Helper Functions
 def monitor_ride(ride_id):
@@ -813,7 +886,9 @@ def generate_safety_report(ride):
         print("===== DEBUGGING - AI ASSISTANT =========")
         print(test_output)
         
-        return test_output
+        ride_dict = asdict(ride)
+        
+        return {**ride_dict, **test_output}
     
     print("===== DEBUGGING - NO AI ASSISTANT =========")
 
@@ -1871,9 +1946,6 @@ setInterval(() => {
             <p style="color: #1976D2;">• {{ report.qwen_response }}</p>
         </div>
     </div>
-    
-    
-
 
     <div class="card" style="background: #F5F5F5;">
         <h4 style="margin-bottom: 12px;">🔐 Data Security</h4>
@@ -1883,7 +1955,7 @@ setInterval(() => {
         </p>
         
         <div style="margin-top: 16px;">
-            <button class="btn btn-secondary" style="font-size: 14px; padding: 10px 16px;">
+            <button id="downloadBtn" data-ride-id="{{ report.ride_id }}" class="btn btn-secondary" style="font-size: 14px; padding: 10px 16px;">
                 Download Report
             </button>
         </div>
@@ -1895,6 +1967,19 @@ setInterval(() => {
         </a>
     </div>
 </div>
+
+<script>
+const rideId = "{{ report.ride_id }}";
+
+document.getElementById("downloadBtn").addEventListener("click", () => {
+    const link = document.createElement("a");
+    link.href = `/download-report/${rideId}`;
+    link.download = `ride_report_${rideId}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+});
+</script>
 {% endblock %}'''
     
     # Save all templates
