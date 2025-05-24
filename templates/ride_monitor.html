@@ -1,84 +1,252 @@
 {% extends "base.html" %}
-{% block title %}Ride Monitor{% endblock %}
+{% block title %}Ride in Progress{% endblock %}
 {% block content %}
-<div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h2>GoGuard Active <span class="status-indicator status-active"></span></h2>
-        <button onclick="endRide()" class="btn btn-secondary">End Ride</button>
+<!-- Map Container -->
+<div class="map-container">
+    <img src="https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/pin-s+00AA13({{ ride.pickup_coords[1] }},{{ ride.pickup_coords[0] }}),pin-s+ff4444({{ ride.dropoff_coords[1] }},{{ ride.dropoff_coords[0] }})/{{ ride.pickup_coords[1] }},{{ ride.pickup_coords[0] }},12,0/400x300?access_token=pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJjazlwYzlhMDEwMDEzM2xwY2E3MzY5NTY5In0.0aS1iUm0n0a0a0a0a0a0aA" 
+         style="width: 100%; height: 100%; object-fit: cover;">
+    <div style="position: absolute; top: 10px; left: 10px; background: white; padding: 8px 12px; border-radius: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <span class="status-pill">● On the way with you</span>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Driver Card -->
+    <div class="driver-card" style="margin-top: -40px; position: relative; z-index: 10;">
+        <div class="driver-photo">{{ ride.driver.name[0] }}</div>
+        <div class="driver-info" style="flex: 1;">
+            <h3>{{ ride.driver.name }}</h3>
+            <p>{{ ride.driver.vehicle_number }} • <span style="color: #FFB300;">⭐ {{ ride.driver.rating }}</span></p>
+            <p style="font-size: 12px;">{{ ride.driver.total_rides }} trips in the past 1 year</p>
+        </div>
+        <div style="background: #4CAF50; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+            ✓
+        </div>
     </div>
     
-    <div class="grid" style="margin-top: 20px;">
-        <div>
-            <p><strong>From:</strong> {{ ride.pickup_location }}</p>
-            <p><strong>To:</strong> {{ ride.dropoff_location }}</p>
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <div class="action-btn" onclick="alert('Calling driver...')">
+            <div style="font-size: 20px;">📞</div>
+            <div style="font-size: 14px; margin-top: 4px;">Call</div>
         </div>
-        <div>
-            <p><strong>Driver:</strong> {{ ride.driver.name }}</p>
-            <p><strong>Vehicle:</strong> {{ ride.driver.vehicle_number }}</p>
+        <div class="action-btn" onclick="alert('Opening chat...')">
+            <div style="font-size: 20px;">💬</div>
+            <div style="font-size: 14px; margin-top: 4px;">Chat</div>
         </div>
     </div>
     
-    <div style="margin-top: 20px;">
-        <p><strong>Ride Progress</strong></p>
-        <div class="progress-bar">
-            <div class="progress-fill" id="progressBar" style="width: 0%;"></div>
+    <!-- Trip Info -->
+    <div class="card" style="margin-top: 16px;">
+        <div class="location-item" style="padding: 8px 0;">
+            <div style="color: #00AA13; font-size: 20px;">●</div>
+            <div style="flex: 1;">
+                <p style="font-size: 12px; color: #666;">PICKUP LOCATION</p>
+                <p style="font-weight: 600;">{{ ride.pickup_location }}</p>
+            </div>
         </div>
-        <p style="text-align: center; margin-top: 8px;">
-            <span id="elapsedTime">0</span> / {{ ride.estimated_duration }} minutes
+        
+        <div style="border-left: 2px dashed #ddd; margin-left: 10px; height: 20px;"></div>
+        
+        <div class="location-item" style="padding: 8px 0;">
+            <div style="color: #ff4444; font-size: 20px;">●</div>
+            <div style="flex: 1;">
+                <p style="font-size: 12px; color: #666;">DROP-OFF LOCATION</p>
+                <p style="font-weight: 600;">{{ ride.dropoff_location }}</p>
+            </div>
+        </div>
+        
+        <div class="progress-container">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="font-size: 14px; color: #666;">Trip progress</span>
+                <span style="font-size: 14px; font-weight: 600;">
+                    <span id="elapsedTime">0</span> / {{ ride.estimated_duration }} min
+                </span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar" style="width: 0%;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Voice Guardian -->
+    <div class="card" style="text-align: center;">
+        <h3 style="margin-bottom: 16px;">🛡️ GoGuard is Active</h3>
+        <p style="color: #666; margin-bottom: 20px;">Tap to speak or use voice command</p>
+        
+        <div class="voice-indicator" id="voiceIndicator" onclick="toggleVoice()">
+            <span style="color: white; font-size: 40px;">🎤</span>
+        </div>
+        
+        <p id="voiceStatus" style="margin-top: 16px; font-size: 14px; color: #666;">
+            Click microphone to start
         </p>
-    </div>
-</div>
-
-<div class="card">
-    <h3>🎤 Voice Guardian</h3>
-    <p>I'm listening for your safety. Just speak naturally if you need help.</p>
-    
-    <div style="margin-top: 16px;">
-        <input type="text" id="voiceInput" class="voice-input" 
-               placeholder="Simulate voice input: Try saying 'I feel uncomfortable' or 'Help'">
-        <button onclick="checkVoice()" class="btn" style="margin-top: 8px;">Analyze Voice</button>
+        
+        <!-- Hidden input for fallback -->
+        <input type="text" id="voiceInput" placeholder="Or type here to simulate voice" 
+               style="margin-top: 16px; display: none;">
     </div>
     
-    <div id="aiResponse" style="margin-top: 16px; display: none;">
-        <div class="card" style="background: #E3F2FD;">
-            <h4>🤖 GoGuard AI:</h4>
-            <p id="aiMessage"></p>
-            <div id="emergencyActions" style="margin-top: 12px;"></div>
+    <!-- AI Response -->
+    <div id="aiResponse" class="card" style="display: none; background: #E3F2FD;">
+        <h4 style="margin-bottom: 8px;">🤖 GoGuard AI:</h4>
+        <p id="aiMessage"></p>
+        <div id="emergencyActions" style="margin-top: 12px;"></div>
+    </div>
+    
+    <!-- Safety Events -->
+    <div class="card">
+        <h4 style="margin-bottom: 12px;">Safety Log</h4>
+        <div id="safetyEvents">
+            <p style="color: #666; font-size: 14px;">✓ All systems normal</p>
         </div>
     </div>
 </div>
 
-<div class="card">
-    <h3>Safety Events Log</h3>
-    <div id="safetyEvents">
-        <p style="color: #666;">No events detected - Your ride is progressing safely</p>
-    </div>
+<!-- Emergency FAB -->
+<div class="emergency-fab" onclick="showEmergencyOptions()">
+    🚨
 </div>
 
-<div class="emergency-panel" style="display: none;" id="emergencyPanel">
-    <h3>🚨 Emergency Options</h3>
-    <div class="grid">
-        <button onclick="triggerEmergency('contact_emergency')" class="btn btn-danger">
-            Call Emergency
-        </button>
-        <button onclick="triggerEmergency('share_location')" class="btn btn-danger">
-            Share Location
-        </button>
-        <button onclick="triggerEmergency('silent_alarm')" class="btn btn-danger">
-            Silent Alarm
-        </button>
-    </div>
+<!-- Emergency Bottom Sheet -->
+<div id="emergencySheet" class="bottom-sheet">
+    <h3 style="margin-bottom: 20px;">Emergency Options</h3>
+    <button onclick="triggerEmergency('contact_emergency')" class="btn btn-danger" style="margin-bottom: 12px;">
+        📞 Call Emergency (112)
+    </button>
+    <button onclick="triggerEmergency('share_location')" class="btn" style="margin-bottom: 12px;">
+        📍 Share Live Location
+    </button>
+    <button onclick="triggerEmergency('silent_alarm')" class="btn btn-secondary">
+        🔕 Silent Alarm
+    </button>
+    <button onclick="hideEmergencyOptions()" class="btn btn-outline" style="margin-top: 20px;">
+        Cancel
+    </button>
 </div>
 
 <script>
 const rideId = '{{ ride.id }}';
 let updateInterval;
+let voiceRecognition = null;
+let isListening = false;
+
+// Initialize speech recognition
+function initVoiceRecognition() {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        voiceRecognition = new SpeechRecognition();
+        voiceRecognition.continuous = true;
+        voiceRecognition.interimResults = true;
+        voiceRecognition.lang = 'en-US';
+        
+        voiceRecognition.onresult = function(event) {
+            const last = event.results.length - 1;
+            const transcript = event.results[last][0].transcript;
+            
+            document.getElementById('voiceStatus').textContent = `"${transcript}"`;
+            
+            // Check for final result
+            if (event.results[last].isFinal) {
+                analyzeVoice(transcript);
+            }
+        };
+        
+        voiceRecognition.onerror = function(event) {
+            console.error('Voice recognition error:', event.error);
+            document.getElementById('voiceStatus').textContent = 'Error: ' + event.error;
+            
+            // Fallback to text input
+            document.getElementById('voiceInput').style.display = 'block';
+            document.getElementById('voiceStatus').textContent = 'Voice not available. Type instead.';
+        };
+        
+        voiceRecognition.onend = function() {
+            isListening = false;
+            document.getElementById('voiceIndicator').classList.remove('active');
+            if (document.getElementById('voiceStatus').textContent.includes('Listening')) {
+                document.getElementById('voiceStatus').textContent = 'Click microphone to start';
+            }
+        };
+    } else {
+        // No speech recognition support
+        document.getElementById('voiceInput').style.display = 'block';
+        document.getElementById('voiceStatus').textContent = 'Voice not supported. Type instead.';
+    }
+}
+
+function toggleVoice() {
+    if (voiceRecognition) {
+        if (isListening) {
+            voiceRecognition.stop();
+            isListening = false;
+            document.getElementById('voiceIndicator').classList.remove('active');
+            document.getElementById('voiceStatus').textContent = 'Click microphone to start';
+        } else {
+            voiceRecognition.start();
+            isListening = true;
+            document.getElementById('voiceIndicator').classList.add('active');
+            document.getElementById('voiceStatus').textContent = '🎤 Listening...';
+        }
+    } else {
+        // Use text input as fallback
+        const input = document.getElementById('voiceInput');
+        if (input.style.display === 'none') {
+            input.style.display = 'block';
+            input.focus();
+        }
+    }
+}
+
+// Fallback for text input
+document.getElementById('voiceInput')?.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        analyzeVoice(this.value);
+        this.value = '';
+    }
+});
+
+function analyzeVoice(text) {
+    fetch('/api/voice-check', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            ride_id: rideId,
+            text: text
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById('aiMessage').textContent = data.ai_response;
+        document.getElementById('aiResponse').style.display = 'block';
+        
+        if (data.actions && data.actions.length > 0) {
+            const actionsHtml = data.actions.map(action => {
+                const actionLabels = {
+                    'contact_emergency': '📞 Emergency',
+                    'share_location': '📍 Share Location',
+                    'silent_alarm': '🔕 Silent Alarm',
+                    'call_support': '☎️ Support'
+                };
+                return `<button onclick="triggerEmergency('${action}')" class="btn btn-danger" style="margin-right: 8px;">
+                    ${actionLabels[action] || action}
+                </button>`;
+            }).join('');
+            
+            document.getElementById('emergencyActions').innerHTML = actionsHtml;
+        } else {
+            document.getElementById('emergencyActions').innerHTML = '';
+        }
+        
+        updateRideStatus();
+    });
+}
 
 function updateRideStatus() {
     fetch(`/api/ride-status/${rideId}`)
         .then(res => res.json())
         .then(data => {
-            // Update progress bar
+            // Update progress
             document.getElementById('progressBar').style.width = data.progress + '%';
             document.getElementById('elapsedTime').textContent = Math.round(data.elapsed_minutes);
             
@@ -86,10 +254,11 @@ function updateRideStatus() {
             if (data.safety_events.length > 0) {
                 const eventsHtml = data.safety_events.map(event => {
                     const eventClass = event.level === 'DISTRESS' ? 'distress' : '';
+                    const time = new Date(event.timestamp).toLocaleTimeString();
                     return `
                         <div class="safety-event ${eventClass}">
-                            <strong>${event.type}</strong> - ${new Date(event.timestamp).toLocaleTimeString()}
-                            <p>${event.details || ''}</p>
+                            <strong>${event.type}</strong> - ${time}
+                            <p style="font-size: 14px; margin-top: 4px;">${event.details || ''}</p>
                         </div>
                     `;
                 }).join('');
@@ -99,47 +268,25 @@ function updateRideStatus() {
             // Check if ride completed
             if (data.progress >= 100) {
                 clearInterval(updateInterval);
-                setTimeout(() => endRide(), 2000);
+                setTimeout(() => {
+                    fetch(`/api/end-ride/${rideId}`, {method: 'POST'})
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.status === 'COMPLETED') {
+                                window.location.href = `/safety-report/${rideId}`;
+                            }
+                        });
+                }, 2000);
             }
         });
 }
 
-function checkVoice() {
-    const voiceText = document.getElementById('voiceInput').value;
-    
-    fetch('/api/voice-check', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            ride_id: rideId,
-            text: voiceText
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        document.getElementById('aiMessage').textContent = data.ai_response;
-        document.getElementById('aiResponse').style.display = 'block';
-        
-        if (data.suggested_actions.length > 0) {
-            const actionsHtml = data.suggested_actions.map(action => {
-                const actionLabels = {
-                    'contact_emergency': '📞 Contact Emergency',
-                    'share_location': '📍 Share Location',
-                    'silent_alarm': '🔕 Silent Alarm',
-                    'call_support': '☎️ Call Support'
-                };
-                return `<button onclick="triggerEmergency('${action}')" class="btn btn-danger" style="margin-right: 8px;">
-                    ${actionLabels[action] || action}
-                </button>`;
-            }).join('');
-            
-            document.getElementById('emergencyActions').innerHTML = actionsHtml;
-            document.getElementById('emergencyPanel').style.display = 'block';
-        }
-        
-        // Clear input
-        document.getElementById('voiceInput').value = '';
-    });
+function showEmergencyOptions() {
+    document.getElementById('emergencySheet').classList.add('active');
+}
+
+function hideEmergencyOptions() {
+    document.getElementById('emergencySheet').classList.remove('active');
 }
 
 function triggerEmergency(action) {
@@ -154,31 +301,23 @@ function triggerEmergency(action) {
     .then(res => res.json())
     .then(data => {
         alert(data.message);
+        hideEmergencyOptions();
         updateRideStatus();
     });
 }
 
-function endRide() {
-    fetch(`/api/end-ride/${rideId}`, {method: 'POST'})
-        .then(res => res.json())
-        .then(data => {
-            if (data.status === 'COMPLETED') {
-                window.location.href = `/safety-report/${rideId}`;
-            }
-        });
-}
-
-// Start monitoring
+// Initialize
+initVoiceRecognition();
 updateInterval = setInterval(updateRideStatus, 3000);
 updateRideStatus();
 
-// Simulate automatic voice checks
+// Periodic AI check-ins
 setInterval(() => {
-    if (Math.random() < 0.1) {  // 10% chance
+    if (Math.random() < 0.1) {
         document.getElementById('aiResponse').style.display = 'block';
         document.getElementById('aiMessage').textContent = 
             "Hi! Just checking in. Everything going well with your ride?";
     }
-}, 30000);  // Every 30 seconds
+}, 45000);
 </script>
 {% endblock %}

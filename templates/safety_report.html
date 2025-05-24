@@ -1,63 +1,73 @@
 {% extends "base.html" %}
 {% block title %}Safety Report{% endblock %}
 {% block content %}
-<div class="card" style="text-align: center;">
-    <h1>✅ Ride Completed Safely</h1>
-    <p style="font-size: 20px; margin-top: 20px;">Thank you for using GoGuard!</p>
-</div>
-
-<div class="card">
-    <h2>📊 Safety Report</h2>
-    
-    <div style="text-align: center; margin: 30px 0;">
-        <h3>Overall Safety Score</h3>
-        <div style="font-size: 48px; color: #4CAF50;">{{ report.overall_safety_score * 100 }}%</div>
+<div class="container">
+    <div class="card" style="text-align: center; background: #E8F5E9;">
+        <div style="font-size: 60px; margin-bottom: 16px;">✅</div>
+        <h2 style="color: #2E7D32; margin-bottom: 8px;">Ride Completed Safely</h2>
+        <p style="color: #558B2F;">Thank you for using GoGuard!</p>
     </div>
-    
-    <div class="grid">
-        <div class="card" style="background: #E8F5E9;">
-            <h4>Ride Duration</h4>
-            <p style="font-size: 24px;">{{ report.duration }}</p>
+
+    <div class="card">
+        <h3 style="margin-bottom: 20px;">📊 AI Safety Analysis</h3>
+        
+        <div style="text-align: center; margin-bottom: 24px;">
+            <div style="font-size: 48px; color: #00AA13; font-weight: bold;">
+                {{ (report.overall_safety_score * 100)|int }}%
+            </div>
+            <p style="color: #666;">Overall Safety Score</p>
         </div>
         
-        <div class="card" style="background: #E3F2FD;">
-            <h4>Route Compliance</h4>
-            <p style="font-size: 24px;">{{ report.route_compliance }}</p>
-        </div>
-        
-        <div class="card" style="background: #FFF3E0;">
-            <h4>Safety Incidents</h4>
-            <p style="font-size: 24px;">{{ report.incidents }}</p>
-        </div>
-        
-        <div class="card" style="background: #F3E5F5;">
-            <h4>AI Interventions</h4>
-            <p style="font-size: 24px;">{{ report.ai_interventions }}</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div style="text-align: center; padding: 16px; background: #f5f5f5; border-radius: 8px;">
+                <h4 style="font-size: 24px; color: #333;">{{ report.duration }}</h4>
+                <p style="color: #666; font-size: 14px;">Duration</p>
+            </div>
+            
+            <div style="text-align: center; padding: 16px; background: #f5f5f5; border-radius: 8px;">
+                <h4 style="font-size: 24px; color: #333;">{{ report.incidents }}</h4>
+                <p style="color: #666; font-size: 14px;">Safety Events</p>
+            </div>
+            
+            <div style="text-align: center; padding: 16px; background: #f5f5f5; border-radius: 8px;">
+                <h4 style="font-size: 24px; color: #333;">{{ report.route_compliance }}</h4>
+                <p style="color: #666; font-size: 14px;">Route Compliance</p>
+            </div>
+            
+            <div style="text-align: center; padding: 16px; background: #f5f5f5; border-radius: 8px;">
+                <h4 style="font-size: 24px; color: #333;">{{ report.ai_interventions }}</h4>
+                <p style="color: #666; font-size: 14px;">AI Check-ins</p>
+            </div>
         </div>
     </div>
-</div>
 
-<div class="card">
-    <h3>🎯 Recommendations</h3>
-    <ul style="line-height: 2;">
+    <div class="card">
+        <h4 style="margin-bottom: 16px;">🎯 AI Recommendations</h4>
         {% for rec in report.recommendations %}
-        <li>{{ rec }}</li>
+        <div style="padding: 12px; background: #E3F2FD; border-radius: 8px; margin-bottom: 8px;">
+            <p style="color: #1976D2;">• {{ rec }}</p>
+        </div>
         {% endfor %}
-    </ul>
-</div>
-
-<div class="card">
-    <h3>🔐 Security Notice</h3>
-    <p>All ride data has been encrypted and securely stored on Alibaba Cloud. 
-    Voice recordings and location data are automatically deleted after 7 days unless you choose to save them.</p>
-    
-    <div style="margin-top: 20px;">
-        <button class="btn">Download Full Report</button>
-        <button class="btn btn-secondary">Report Issue</button>
     </div>
-</div>
 
-<div style="text-align: center; margin-top: 40px;">
-    <a href="/" class="btn" style="font-size: 18px;">Book Another Safe Ride</a>
+    <div class="card" style="background: #F5F5F5;">
+        <h4 style="margin-bottom: 12px;">🔐 Data Security</h4>
+        <p style="color: #666; font-size: 14px; line-height: 1.6;">
+            All ride data has been encrypted and securely stored. Voice recordings and location data 
+            are automatically deleted after 7 days unless saved.
+        </p>
+        
+        <div style="margin-top: 16px;">
+            <button class="btn btn-secondary" style="font-size: 14px; padding: 10px 16px;">
+                Download Report
+            </button>
+        </div>
+    </div>
+
+    <div style="padding: 0 20px 20px;">
+        <a href="/" class="btn">
+            Book Another Safe Ride
+        </a>
+    </div>
 </div>
 {% endblock %}
