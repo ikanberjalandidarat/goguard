@@ -11,6 +11,7 @@ import threading
 import time
 from dataclasses import dataclass
 from typing import Dict, List, Optional
+import pandas as pd
 import os
 import base64
 import hashlib
@@ -29,14 +30,49 @@ app.secret_key = 'goguard-secret-key-hackathon-2024'
 # Mock Data Classes
 @dataclass
 class Driver:
+    """Driver data class to match your existing structure"""
     id: str
     name: str
     photo: str
     rating: float
     total_rides: int
-    safety_score: float
+    acceptance_rate: float
     vehicle_number: str
-    vehicle_type: str
+    vehicle_model: str
+    phone: str = ""
+    join_date: str = ""
+    status: str = "active"
+    vehicle_type: str = ""
+    vehicle_year: int = 2020
+    last_location: Tuple[float, float] = (0.0, 0.0)
+    total_earnings: int = 0
+    avg_trip_duration: float = 0.0
+    cancellation_rate: float = 0.0
+    languages: str = ""
+    vehicle_color: str = ""
+    
+    @property
+    def safety_score(self) -> float:
+        """Calculate safety score based on driver metrics"""
+        # Base score from rating (normalized to 0-1)
+        rating_score = (self.rating - 1) / 4  # Convert 1-5 rating to 0-1
+        
+        # Experience factor (more rides = higher safety)
+        experience_factor = min(1.0, self.total_rides / 2000)
+        
+        # Acceptance rate factor
+        acceptance_factor = self.acceptance_rate
+        
+        # Low cancellation rate is good
+        cancellation_factor = 1 - self.cancellation_rate
+        
+        # Weighted average
+        safety_score = (rating_score * 0.4 + 
+                       experience_factor * 0.3 + 
+                       acceptance_factor * 0.2 + 
+                       cancellation_factor * 0.1)
+        
+        return min(1.0, max(0.0, safety_score))
 
 @dataclass
 class Ride:
@@ -69,6 +105,140 @@ MOCK_LOCATIONS = {
 
 # In-memory storage for active rides
 active_rides = {}
+
+def load_drivers_from_csv(file_path: str = 'drivers.csv') -> List[Driver]:
+    """Load drivers from CSV file and return list of Driver objects"""
+    try:
+        df = pd.read_csv(file_path)
+        drivers = []
+        
+        for _, row in df.iterrows():
+            driver = Driver(
+                id=row['driver_id'],
+                name=row['name'],
+                photo=row['photo'],
+                rating=float(row['rating']),
+                total_rides=int(row['total_trips']),
+                acceptance_rate=float(row['acceptance_rate']),
+                vehicle_number=row['license_plate'],
+                vehicle_model=row['vehicle_model'],
+                phone=row.get('phone', ''),
+                join_date=row.get('join_date', ''),
+                status=row.get('status', 'active'),
+                vehicle_type=row.get('vehicle_type', ''),
+                vehicle_year=int(row.get('vehicle_year', 2020)),
+                last_location=(float(row.get('last_location_lat', 0)), 
+                              float(row.get('last_location_lng', 0))),
+                total_earnings=int(row.get('total_earnings', 0)),
+                avg_trip_duration=float(row.get('avg_trip_duration', 0)),
+                cancellation_rate=float(row.get('cancellation_rate', 0)),
+                languages=row.get('languages', ''),
+                vehicle_color=row.get('vehicle_color', '')
+            )
+            drivers.append(driver)
+        
+        print(f"✅ Successfully loaded {len(drivers)} drivers from CSV")
+        return drivers
+        
+    except FileNotFoundError:
+        print(f"❌ Error: {file_path} not found")
+        return []
+    except Exception as e:
+        print(f"❌ Error loading drivers: {e}")
+        return []
+
+def load_locations_from_csv(file_path: str = 'locations.csv') -> Dict:
+    """Load locations from CSV file and return dictionary compatible with your existing code"""
+    try:
+        df = pd.read_csv(file_path)
+        locations = {}
+        
+        for _, row in df.iterrows():
+            # Create a simple key from location_id (remove LOC prefix and convert to lowercase)
+            key = row['location_id'].replace('LOC', '').zfill(3)  # e.g., LOC001 -> 001
+            
+            # You can also create more meaningful keys based on category or name
+            # For compatibility with your existing code, let's also add some standard keys
+            location_data = {
+                "name": row['name'],
+                "coords": (float(row['latitude']), float(row['longitude'])),
+                "safety_score": float(row['safety_score']),
+                "category": row.get('category', ''),
+                "address": row.get('address', ''),
+                "district": row.get('district', ''),
+                "city": row.get('city', ''),
+                "postal_code": row.get('postal_code', ''),
+                "operating_hours": row.get('operating_hours', ''),
+                "parking_available": row.get('parking_available', False),
+                "accessibility": row.get('accessibility', ''),
+                "popularity_score": float(row.get('popularity_score', 0)),
+                "avg_wait_time": int(row.get('avg_wait_time', 0))
+            }
+            
+            locations[key] = location_data
+        
+        # Add some standard keys for compatibility with your existing code
+        # Map some locations to your original keys
+        if '001' in locations:  # Home location
+            locations['home'] = locations['001']
+        if '002' in locations:  # Office location
+            locations['office'] = locations['002']
+        if '003' in locations:  # Mall location
+            locations['mall'] = locations['003']
+        if '004' in locations:  # Friend location
+            locations['friend'] = locations['004']
+        if '005' in locations:  # Restaurant location
+            locations['restaurant'] = locations['005']
+        
+        print(f"✅ Successfully loaded {len(locations)} locations from CSV")
+        return locations
+        
+    except FileNotFoundError:
+        print(f"❌ Error: {file_path} not found")
+        return {}
+    except Exception as e:
+        print(f"❌ Error loading locations: {e}")
+        return {}
+
+def create_location_key_mapping(locations: Dict) -> Dict[str, str]:
+    """Create a mapping of location names to keys for easier lookup"""
+    mapping = {}
+    for key, location in locations.items():
+        # Create mappings based on name keywords
+        name_lower = location['name'].lower()
+        if 'home' in name_lower or 'apartment' in name_lower:
+            mapping['home'] = key
+        elif 'office' in name_lower or 'tower' in name_lower:
+            mapping['office'] = key
+        elif 'mall' in name_lower and 'grand indonesia' in name_lower:
+            mapping['mall'] = key
+        elif 'kemang' in name_lower:
+            mapping['friend'] = key
+        elif 'restaurant' in name_lower or 'sate' in name_lower:
+            mapping['restaurant'] = key
+    
+    return mapping
+
+# Main loading function
+def load_all_data(drivers_file: str = 'drivers.csv', locations_file: str = 'locations.csv'):
+    """Load both drivers and locations data"""
+    print("🔄 Loading data from CSV files...")
+    
+    drivers = load_drivers_from_csv(drivers_file)
+    locations = load_locations_from_csv(locations_file)
+    location_mapping = create_location_key_mapping(locations)
+    
+    print(f"📊 Data loading complete:")
+    print(f"   - Drivers: {len(drivers)}")
+    print(f"   - Locations: {len(locations)}")
+    print(f"   - Location mappings: {len(location_mapping)}")
+    
+    return drivers, locations, location_mapping
+
+# Simple one-line loader for main method
+def load_csv_data():
+    """One-line method to load all CSV data and return as tuple"""
+    return load_all_data()
 
 # AI Safety Analysis Functions
 def calculate_ride_risk_score(driver: Driver, pickup: str, dropoff: str, time_of_day: int) -> Dict:
@@ -410,7 +580,10 @@ if __name__ == '__main__':
     os.makedirs('templates', exist_ok=True)
     os.makedirs('static', exist_ok=True)
     
-    # Create base template with enhanced styling
+    # Load the data
+    MOCK_DRIVERS, MOCK_LOCATIONS, location_mapping = load_csv_data()
+    
+    # Create base template with enhanced stylin
     base_html = '''<!DOCTYPE html>
 <html lang="en">
 <head>
