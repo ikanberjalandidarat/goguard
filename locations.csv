@@ -1,0 +1,40 @@
+location_id,name,latitude,longitude,safety_score,category,address,district,city,postal_code,operating_hours,parking_available,accessibility,popularity_score,avg_wait_time,last_updated
+LOC001,Home - Apartment Sudirman Park,-6.2088,106.8456,0.90,residential,"Jl. K.H. Mas Mansyur No.121, Tanah Abang",Tanah Abang,Jakarta Pusat,10220,24/7,true,wheelchair_accessible,0.75,2,2025-05-24
+LOC002,GoTower - Pasaraya,-6.2433,106.7987,0.95,office,"Jl. Iskandarsyah II No.2, Melawai",Kebayoran Baru,Jakarta Selatan,12160,06:00-22:00,true,wheelchair_accessible,0.88,5,2025-05-24
+LOC003,Grand Indonesia Mall,-6.1951,106.8218,0.88,shopping,"Jl. M.H. Thamrin No.1, Menteng",Menteng,Jakarta Pusat,10310,10:00-22:00,true,wheelchair_accessible,0.95,8,2025-05-24
+LOC004,Sarah's Place - Kemang,-6.2633,106.8133,0.82,residential,"Jl. Kemang Raya No.45, Bangka",Mampang Prapatan,Jakarta Selatan,12560,24/7,false,limited_access,0.65,3,2025-05-24
+LOC005,Sate Khas Senayan,-6.2275,106.8007,0.87,restaurant,"Jl. Kebon Sirih Timur No.17, Kebon Sirih",Menteng,Jakarta Pusat,10340,11:00-23:00,true,wheelchair_accessible,0.82,12,2025-05-24
+LOC006,Plaza Indonesia,-6.1929,106.8218,0.91,shopping,"Jl. M.H. Thamrin Kav. 28-30, Menteng",Menteng,Jakarta Pusat,10350,10:00-22:00,true,wheelchair_accessible,0.93,10,2025-05-24
+LOC007,Gelora Bung Karno Stadium,-6.2188,106.8019,0.85,sports,"Jl. Pintu Satu Senayan, Gelora",Tanah Abang,Jakarta Pusat,10270,05:00-22:00,true,wheelchair_accessible,0.89,15,2025-05-24
+LOC008,Monas (National Monument),-6.1754,106.8272,0.83,tourist,"Jl. Silang Monas, Gambir",Gambir,Jakarta Pusat,10110,08:00-16:00,true,wheelchair_accessible,0.97,20,2025-05-24
+LOC009,Taman Mini Indonesia Indah,-6.3025,106.8952,0.79,tourist,"Jl. Raya Taman Mini, Ceger",Cipayung,Jakarta Timur,13820,07:00-17:00,true,wheelchair_accessible,0.85,25,2025-05-24
+LOC010,Ancol Dreamland,-6.1222,106.8348,0.76,entertainment,"Jl. Lodan Timur No.7, Ancol",Pademangan,Jakarta Utara,14430,06:00-18:00,true,wheelchair_accessible,0.91,18,2025-05-24
+LOC011,Kota Tua Jakarta,-6.1352,106.8133,0.74,tourist,"Jl. Taman Fatahillah No.1, Pinangsia",Taman Sari,Jakarta Barat,11110,08:00-17:00,limited,limited_access,0.88,22,2025-05-24
+LOC012,Central Park Mall,-6.1776,106.7909,0.89,shopping,"Jl. Letjen S. Parman Kav. 28, Tanjung Duren",Grogol Petamburan,Jakarta Barat,11470,10:00-22:00,true,wheelchair_accessible,0.87,9,2025-05-24
+LOC013,Menteng Park,-6.1889,106.8367,0.86,park,"Jl. HOS Cokroaminoto, Menteng",Menteng,Jakarta Pusat,10310,05:00-21:00,limited,wheelchair_accessible,0.72,5,2025-05-24
+LOC014,Blok M Square,-6.2444,106.7990,0.78,shopping,"Jl. Melawai Raya No.9, Melawai",Kebayoran Baru,Jakarta Selatan,12160,10:00-21:00,true,wheelchair_accessible,0.83,11,2025-05-24
+LOC015,Senayan City,-6.2297,106.7831,0.92,shopping,"Jl. Asia Afrika No.19, Gelora",Tanah Abang,Jakarta Pusat,10270,10:00-22:00,true,wheelchair_accessible,0.90,7,2025-05-24
+LOC016,Sarinah Department Store,-6.1844,106.8227,0.84,shopping,"Jl. M.H. Thamrin No.11, Gondangdia",Menteng,Jakarta Pusat,10350,10:00-21:00,limited,wheelchair_accessible,0.79,13,2025-05-24
+LOC017,Bundaran HI (Hotel Indonesia),-6.1944,106.8231,0.88,landmark,"Jl. M.H. Thamrin, Menteng",Menteng,Jakarta Pusat,10310,24/7,false,wheelchair_accessible,0.94,3,2025-05-24
+LOC018,Istiqlal Mosque,-6.1702,106.8294,0.81,religious,"Jl. Taman Wijaya Kusuma, Pasar Baru",Sawah Besar,Jakarta Pusat,10710,24/7,true,wheelchair_accessible,0.86,15,2025-05-24
+LOC019,Jakarta Cathedral,-6.1695,106.8300,0.82,religious,"Jl. Katedral No.7B, Pasar Baru",Sawah Besar,Jakarta Pusat,10710,05:00-19:00,limited,limited_access,0.78,8,2025-05-24
+LOC020,Cipete Utara Station,-6.2622,106.8044,0.75,transport,"Jl. RS Fatmawati Raya, Cipete Utara",Kebayoran Baru,Jakarta Selatan,12150,05:00-23:00,false,wheelchair_accessible,0.81,6,2025-05-24
+LOC021,Sudirman Station,-6.2075,106.8222,0.93,transport,"Jl. Jend. Sudirman Kav. 45-46, Setiabudi",Setiabudi,Jakarta Selatan,12930,05:00-24:00,false,wheelchair_accessible,0.92,4,2025-05-24
+LOC022,Tanah Abang Market,-6.1792,106.8108,0.68,market,"Jl. Tanah Abang I No.1, Petojo Selatan",Gambir,Jakarta Pusat,10160,06:00-18:00,limited,limited_access,0.89,30,2025-05-24
+LOC023,Pasar Minggu Market,-6.2856,106.8444,0.72,market,"Jl. Raya Pasar Minggu, Pasar Minggu",Pasar Minggu,Jakarta Selatan,12520,05:00-17:00,limited,limited_access,0.85,25,2025-05-24
+LOC024,Ragunan Zoo,-6.3111,106.8200,0.77,tourist,"Jl. Harsono RM No.1, Ragunan",Pasar Minggu,Jakarta Selatan,12550,08:00-16:00,true,wheelchair_accessible,0.83,20,2025-05-24
+LOC025,Kemayoran Exhibition Center,-6.1542,106.8467,0.86,exhibition,"Jl. Benda Raya Kemayoran, Kemayoren",Kemayoran,Jakarta Pusat,10620,24/7,true,wheelchair_accessible,0.76,12,2025-05-24
+LOC026,SCBD (Sudirman Central Business District),-6.2253,106.8089,0.94,office,"Jl. Jend. Sudirman Kav. 52-53, Senayan",Kebayoran Baru,Jakarta Selatan,12190,24/7,true,wheelchair_accessible,0.96,8,2025-05-24
+LOC027,Pondok Indah Mall,-6.2634,106.7844,0.90,shopping,"Jl. Metro Pondok Indah, Pondok Pinang",Kebayoran Lama,Jakarta Selatan,12310,10:00-22:00,true,wheelchair_accessible,0.88,9,2025-05-24
+LOC028,Cilandak Town Square,-6.2889,106.8022,0.84,shopping,"Jl. TB Simatupang Kav. 17, Cilandak Barat",Cilandak,Jakarta Selatan,12430,10:00-22:00,true,wheelchair_accessible,0.82,11,2025-05-24
+LOC029,Mall Taman Anggrek,-6.1756,106.7923,0.87,shopping,"Jl. Letjen S. Parman Kav. 21, Tanjung Duren",Grogol Petamburan,Jakarta Barat,11470,10:00-22:00,true,wheelchair_accessible,0.86,10,2025-05-24
+LOC030,Kelapa Gading Mall,-6.1556,106.9067,0.85,shopping,"Jl. Boulevard Raya, Kelapa Gading",Kelapa Gading,Jakarta Utara,14240,10:00-22:00,true,wheelchair_accessible,0.84,12,2025-05-24
+LOC031,Pluit Village,-6.1189,106.7856,0.81,shopping,"Jl. Pluit Indah Raya, Pluit",Penjaringan,Jacksonville Utara,14450,10:00-21:00,true,wheelchair_accessible,0.79,14,2025-05-24
+LOC032,Mangga Dua Square,-6.1289,106.8233,0.73,shopping,"Jl. Arteri Mangga Dua, Mangga Dua",Sawah Besar,Jakarta Pusat,10730,09:00-21:00,limited,limited_access,0.87,16,2025-05-24
+LOC033,ITC Cempaka Mas,-6.1467,106.8756,0.76,shopping,"Jl. Letjen Suprapto, Cempaka Putih",Cempaka Putih,Jakarta Pusat,10640,09:00-21:00,true,limited_access,0.81,15,2025-05-24
+LOC034,Pasar Baru Trade Center,-6.1689,106.8333,0.71,shopping,"Jl. Pasar Baru, Pasar Baru",Sawah Besar,Jakarta Pusat,10710,08:00-17:00,limited,limited_access,0.83,18,2025-05-24
+LOC035,Green Bay Pluit,-6.1078,106.7822,0.88,residential,"Green Bay Pluit, Pluit",Penjaringan,Jakarta Utara,14450,24/7,true,wheelchair_accessible,0.74,4,2025-05-24
+LOC036,Casablanca Office Tower,-6.2244,106.8456,0.91,office,"Jl. Casablanca Raya Kav. 88, Menteng Dalam",Tebet,Jakarta Selatan,12870,06:00-22:00,true,wheelchair_accessible,0.85,6,2025-05-24
+LOC037,Kuningan City,-6.2378,106.8334,0.89,shopping,"Jl. Prof. Dr. Satrio Kav. 18, Kuningan",Setiabudi,Jakarta Selatan,12940,10:00-22:00,true,wheelchair_accessible,0.87,8,2025-05-24
+LOC038,Epicentrum Walk,-6.2156,106.8423,0.86,shopping,"Jl. HR Rasuna Said, Kuningan",Setiabudi,Jakarta Selatan,12940,10:00-23:00,true,wheelchair_accessible,0.84,9,2025-05-24
+LOC039,Thamrin City,-6.1889,106.8189,0.82,shopping,"Jl. M.H. Thamrin No.20, Kebon Melati",Tanah Abang,Jakarta Pusat,10230,10:00-21:00,true,wheelchair_accessible,0.80,13,2025-05-24
