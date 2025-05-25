@@ -68,12 +68,13 @@ class QwenSafetyAI:
     def analyze_voice_distress(self, transcript: str, context: Dict) -> Dict:
         """Analyze voice transcript for distress signals"""
         try:
-            safety_keywords = ['hackathon', 'thai tea']
+            safety_keywords = ['komputer']
 
             prompt = f"""
             Analyze this passenger voice transcript for safety concerns:
             
             Transcript: "{transcript}"
+            Safe keywords: {safety_keywords}
             Current location: {context.get('location', 'Unknown')}
             Ride duration: {context.get('duration', 'Unknown')} minutes
             
@@ -82,10 +83,11 @@ class QwenSafetyAI:
             2. Confidence score (0-1)
             3. Recommended response
             4. Suggested actions
-            5. User have written down these discreet safety keywords: 'Thai Tea' and 'Hackathon', if mentioned, they might be in danger.
+            5. One of the safety keyword exist in the transcript either in a sentence or a standalone word. if mentioned, please flag it as triggered. Even is the sentence seems safe, if it contains one of the word you need to flag it.
             
-            
-            Be sensitive to subtle signs of discomfort. Format as JSON.
+            Be sensitive to subtle signs of discomfort. Format as JSON with variables "distress_level", "confidence", "recommended_response", "suggested_actions", "is_safe_triggered".
+            The possible suggested_actions are: ["contact_emergency", "share_location", "silent_alarm", "call_support"].
+            JUST WRITE THE JSON STRING WITHOUT ANYTHING ELSE BECAUSE YOUR OUTPUT WILL BE PARSED DIRECTLY!
             """
             
             completion = self.client.chat.completions.create(
@@ -97,15 +99,21 @@ class QwenSafetyAI:
                 temperature=0.3
             )
             
-            
             response = completion.choices[0].message.content
+            
+            keyword_triggered = any(
+                keyword.lower() in transcript.lower() for keyword in safety_keywords
+            )
+            
+            print("analyze_voice_distress", transcript, response)
             try:
                 result = json.loads(response)
                 return {
                     "distress_level": result.get("distress_level", "NORMAL"),
                     "confidence": result.get("confidence", 0.8),
                     "ai_response": result.get("recommended_response", "I'm here if you need anything. Everything okay?"),
-                    "actions": result.get("suggested_actions", [])
+                    "actions": result.get("suggested_actions", []),
+                    "is_safe_triggered": result.get("is_safe_triggered", False) or keyword_triggered
                 }
             except:
                 # Fallback to keyword-based analysis
@@ -159,8 +167,7 @@ class QwenSafetyAI:
             Duration: {ride_data.get('duration', 'Unknown')}
             Route: {ride_data.get('route_type', 'standard')}
             Safety events: {ride_data.get('events', [])}
-            Driver behavior: {ride_data.get('driver_behavior', 'Normal')},
-            
+            Is safety keyword triggered: {ride_data.get("is_safe_triggered", False)}
             
             Provide:
             1. Overall safety score (0-100)
@@ -168,10 +175,9 @@ class QwenSafetyAI:
             3. Recommendations for future rides
             4. Areas of concern (if any)
             
-            Format as a paragraph with bullet points, do not bold any text with **. 
+            Format as a paragraph with bullet points, do not bold any text with **.
+            If the safety keyword is triggered, that means the user is in danger and the ride has been flagged by the system.
             Mention the safety score in this format: Overall Safety Score X%.
-            
-            
             """
             
             completion = self.client.chat.completions.create(
@@ -258,7 +264,8 @@ class QwenSafetyAI:
                     "distress_level": "DISTRESS",
                     "confidence": 0.9,
                     "ai_response": "I've detected you might be in distress. Would you like me to contact emergency services?",
-                    "actions": ["contact_emergency", "share_location", "silent_alarm"]
+                    "actions": ["contact_emergency", "share_location", "silent_alarm"],
+                    "is_safe_triggered": False,
                 }
             elif 'concern' in completion_response.lower():
                 
@@ -266,7 +273,8 @@ class QwenSafetyAI:
                     "distress_level": "CONCERN",
                     "confidence": 0.7,
                     "ai_response": "I noticed you might be uncomfortable. How can I help you feel safer?",
-                    "actions": ["share_location", "call_support"]
+                    "actions": ["share_location", "call_support"],
+                    "is_safe_triggered": False,
                 }
             
             else:
@@ -275,7 +283,8 @@ class QwenSafetyAI:
                     "distress_level": "NORMAL",
                     "confidence": 0.8,
                     "ai_response": "Your ride is progressing smoothly. I'm here if you need anything!",
-                    "actions": []
+                    "actions": [],
+                    "is_safe_triggered": False,
                 }
             
             

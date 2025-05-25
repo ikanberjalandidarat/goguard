@@ -102,6 +102,7 @@ class Ride:
     estimated_duration: int
     route_type: str
     status: str
+    is_safe_triggered: bool
     start_time: Optional[datetime] = None
     safety_events: List[Dict] = None
     transcripts: List[str] = None
@@ -618,6 +619,7 @@ def start_ride():
         start_time=datetime.now(),
         safety_events=[],
         transcripts=[],
+        is_safe_triggered=False,
     )
     
     active_rides[ride_id] = ride
@@ -680,6 +682,7 @@ def voice_check():
     }
     
     sentiment = analyze_voice_sentiment(voice_text, context)
+    ride.is_safe_triggered = ride.is_safe_triggered or sentiment["is_safe_triggered"]
     
     if sentiment['distress_level'] in ['DISTRESS', 'CONCERN']:
         active_rides[ride_id].safety_events.append({
@@ -868,7 +871,7 @@ def simulate_current_location(ride, progress):
         "address": f"En route - {round(progress)}% completed"
     }
 
-def generate_safety_report(ride):
+def generate_safety_report(ride: Ride):
     """Generate post-ride safety report"""
 
     print("===== DEBUGGING =========")
@@ -879,7 +882,7 @@ def generate_safety_report(ride):
             "duration": f"{(datetime.now() - ride.start_time).seconds // 60} minutes",
             "route_type": ride.route_type,
             "events": ride.safety_events,
-            "driver_behavior": "Normal"
+            "is_safe_triggered": ride.is_safe_triggered,
         }
         test_output = ai_assistant.summarize_ride_safety(ride_data)
         
@@ -1693,6 +1696,22 @@ let updateInterval;
 let voiceRecognition = null;
 let isListening = false;
 
+const SAFETY_LEVEL = {
+  NORMAL: 0,
+  CONCERN: 1,
+  DISTRESS: 2,
+};
+
+let currentSafetyLevel = SAFETY_LEVEL.NORMAL;
+let isKeywordTriggered = false;
+
+function updateSafetyLevel(newLevelStr) {
+  const newLevel = SAFETY_LEVEL[newLevelStr];
+  if (newLevel > currentSafetyLevel) {
+    currentSafetyLevel = newLevel;
+  }
+}
+
 // Initialize speech recognition
 function initVoiceRecognition() {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -1783,22 +1802,38 @@ function analyzeVoice(text) {
         document.getElementById('aiMessage').textContent = data.ai_response;
         document.getElementById('aiResponse').style.display = 'block';
         
-        if (data.actions && data.actions.length > 0) {
-            const actionsHtml = data.actions.map(action => {
-                const actionLabels = {
-                    'contact_emergency': '📞 Emergency',
-                    'share_location': '📍 Share Location',
-                    'silent_alarm': '🔕 Silent Alarm',
-                    'call_support': '☎️ Support'
-                };
-                return `<button onclick="triggerEmergency('${action}')" class="btn btn-danger" style="margin-right: 8px;">
-                    ${actionLabels[action] || action}
-                </button>`;
-            }).join('');
-            
-            document.getElementById('emergencyActions').innerHTML = actionsHtml;
+        updateSafetyLevel(data.distress_level)
+        
+        if (
+            currentSafetyLevel === SAFETY_LEVEL.DISTRESS &&
+            data.is_safe_triggered
+        ) {
+            isKeywordTriggered = true;
+            alert("Safety keyword activated. Your ride details is flagged and sent to GoTo team and your personal contact!");
+        }
+        
+        if (isKeywordTriggered) {
+            document.getElementById('aiMessage').textContent = "";
+            document.getElementById('aiResponse').style.backgroundColor = '#ffe5e5';
+            document.getElementById('emergencyActions').innerHTML = `<p class="emergency-text">🚨 Emergency response triggered. GoTo team has been notified.</p>`;
         } else {
-            document.getElementById('emergencyActions').innerHTML = '';
+            if (data.actions && data.actions.length > 0) {
+                const actionsHtml = data.actions.map(action => {
+                    const actionLabels = {
+                        'contact_emergency': '📞 Emergency',
+                        'share_location': '📍 Share Location',
+                        'silent_alarm': '🔕 Silent Alarm',
+                        'call_support': '☎️ Support'
+                    };
+                    return `<button onclick="triggerEmergency('${action}')" class="btn btn-danger" style="margin-right: 8px;">
+                        ${actionLabels[action] || action}
+                    </button>`;
+                }).join('');
+                
+                document.getElementById('emergencyActions').innerHTML = actionsHtml;
+            } else {
+                document.getElementById('emergencyActions').innerHTML = '';
+            }
         }
         
         updateRideStatus();
